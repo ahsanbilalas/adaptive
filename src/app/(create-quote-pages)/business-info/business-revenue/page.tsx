@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { useFormik } from 'formik';
 import { isEmpty, isEqual } from 'lodash';
@@ -38,7 +38,10 @@ const BusinessRevenuePage = (props: Props) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const quoteId = searchParams.get('quoteId') || '';
+  const quoteId = useMemo(
+    () => searchParams.get('quoteId') || '',
+    [searchParams]
+  );
 
   const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
   const [createQuote, createQuoteResult] = useCreateQuoteMutation();
@@ -55,13 +58,16 @@ const BusinessRevenuePage = (props: Props) => {
   const coverage = getCoverageFromQuote(quote);
   const businessInfoFromQuote = getBusinessInfoFromQuote(quote);
 
-  const createQuoteParams: ICreateQuoteParams = {
-    quoteId,
-    address,
-    coverage,
-    step: 'businessInformation',
-    product: 'Outage',
-  };
+  const createQuoteParams: ICreateQuoteParams = useMemo(
+    () => ({
+      quoteId,
+      address,
+      coverage,
+      step: 'businessInformation',
+      product: 'Outage',
+    }),
+    [quoteId, address, coverage]
+  );
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -87,11 +93,6 @@ const BusinessRevenuePage = (props: Props) => {
     },
   });
 
-  const disableSubmit =
-    createQuoteResult.isLoading ||
-    quoteQueryResult.isLoading ||
-    formik.isSubmitting;
-
   useEffect(() => {
     if (quote) {
       const policy = getPolicyFromQuote(quote);
@@ -106,6 +107,40 @@ const BusinessRevenuePage = (props: Props) => {
     }
   }, [quote]);
 
+  useEffect(() => {
+    // Quotes query error handling
+    if (
+      quoteQueryResult.isError ||
+      (!quoteQueryResult.isLoading && isEmpty(quote))
+    ) {
+      if (
+        isEmpty(quote) ||
+        (quoteQueryResult.error &&
+          'status' in quoteQueryResult.error &&
+          quoteQueryResult.error.status === 404)
+      )
+        notFound();
+      else throw quoteQueryResult.error;
+    }
+
+    if (!quoteQueryResult.isFetching && quote) {
+      const completed = quote.data.metadata.completed_sections;
+      if (!completed.address) {
+        router.push('/');
+      } else if (!completed.coverage) {
+        router.push(`/policy-coverage?quoteId=${quoteId}`);
+      }
+    }
+  }, [
+    quote,
+    quoteQueryResult.isError,
+    quoteQueryResult.isFetching,
+    quoteQueryResult.error,
+    quoteQueryResult.isLoading,
+    quoteId,
+    router,
+  ]);
+
   const getFieldAttrs = (
     fieldName: keyof IBusinessRevenue,
     extraAttrs: any = {}
@@ -119,26 +154,6 @@ const BusinessRevenuePage = (props: Props) => {
     handleBlur: formik.handleBlur,
   });
 
-  // Quotes query error handling
-  if (
-    quoteQueryResult.isError ||
-    (!quoteQueryResult.isLoading && isEmpty(quote))
-  ) {
-    const error = quoteQueryResult.error;
-    if (isEmpty(quote) || (error && 'status' in error && error.status === 404))
-      return notFound();
-    else throw error;
-  }
-
-  if (!quoteQueryResult.isFetching && quote) {
-    const completed = quote.data.metadata.completed_sections;
-    if (!completed.address) {
-      router.push('/');
-    } else if (!completed.coverage) {
-      router.push(`/policy-coverage?quoteId=${quoteId}`);
-    }
-  }
-
   return (
     <BusinessInfoFormsContainer title="Business Revenue Range">
       <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
@@ -147,7 +162,11 @@ const BusinessRevenuePage = (props: Props) => {
         <FormikInputField {...getFieldAttrs('revenueRangeTo')} />
         <BottomNavBar
           buttonLabel="Next: Review and Pay"
-          disabled={disableSubmit}
+          disabled={
+            createQuoteResult.isLoading ||
+            quoteQueryResult.isLoading ||
+            formik.isSubmitting
+          }
         />
       </form>
     </BusinessInfoFormsContainer>

@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { useFormik } from 'formik';
 import { isEmpty, isEqual } from 'lodash';
@@ -36,7 +36,10 @@ const BusinessEntityPage = (props: Props) => {
   const businessDetails = useAppSelector(selectBusinessDetails);
   const businessInformation = useAppSelector(selectBusinessInformation);
 
-  const quoteId = searchParams.get('quoteId') || '';
+  const quoteId = useMemo(
+    () => searchParams.get('quoteId') || '',
+    [searchParams]
+  );
 
   const {
     data: quote,
@@ -79,6 +82,27 @@ const BusinessEntityPage = (props: Props) => {
     }
   }, [quote]);
 
+  useEffect(() => {
+    // Quotes query error handling
+    if (isError || (!isLoading && isEmpty(quote))) {
+      if (
+        isEmpty(quote) ||
+        (error && 'status' in error && error.status === 404)
+      )
+        notFound();
+      else throw error;
+    }
+
+    if (!isFetching && quote) {
+      const completed = quote.data.metadata.completed_sections;
+      if (!completed.address) {
+        router.push('/');
+      } else if (!completed.coverage) {
+        router.push(`/policy-coverage?quoteId=${quoteId}`);
+      }
+    }
+  }, [quote, isError, isFetching, error, isLoading, quoteId, router]);
+
   const getFieldAttrs = (
     fieldName: keyof IBusinessDetails,
     extraAttrs: any = {}
@@ -91,22 +115,6 @@ const BusinessEntityPage = (props: Props) => {
     handleChange: formik.handleChange,
     handleBlur: formik.handleBlur,
   });
-
-  // Quotes query error handling
-  if (isError || (!isLoading && isEmpty(quote))) {
-    if (isEmpty(quote) || (error && 'status' in error && error.status === 404))
-      return notFound();
-    else throw error;
-  }
-
-  if (!isFetching && quote) {
-    const completed = quote.data.metadata.completed_sections;
-    if (!completed.address) {
-      router.push('/');
-    } else if (!completed.coverage) {
-      router.push(`/policy-coverage?quoteId=${quoteId}`);
-    }
-  }
 
   return (
     <BusinessInfoFormsContainer title="Enter your business details">

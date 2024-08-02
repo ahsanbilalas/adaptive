@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { isEmpty, isEqual } from 'lodash';
 import toast from 'react-hot-toast';
@@ -39,30 +39,30 @@ const PolicyCoveragePage = (props: Props) => {
   const [isModelHidden, setIsModelHidden] = useState(true);
   const [dateInputError, setDateInputError] = useState('');
 
-  const quoteId = searchParams.get('quoteId') || '';
+  const quoteId = useMemo(
+    () => searchParams.get('quoteId') || '',
+    [searchParams]
+  );
 
   const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
   const [createQuote, createQuoteResult] = useCreateQuoteMutation();
 
   const [loading, setLoading] = useState(quote ? false : true);
 
-  const address = getAddressFromQuote(quote);
+  const address = useMemo(() => getAddressFromQuote(quote), [quote]);
 
   const policy = useAppSelector(selectPolicyCoverage);
 
-  let createQuoteParams: ICreateQuoteParams = {
-    quoteId,
-    address,
-    coverage: getCoverage(policy),
-    step: 'coverage',
-    product: 'Outage',
-  };
-
-  const disableSubmit =
-    quoteQueryResult.isLoading ||
-    createQuoteResult.isLoading ||
-    !quote?.data.quoteEstimates ||
-    !quote?.data.selectedEstimateId;
+  let createQuoteParams: ICreateQuoteParams = useMemo(
+    () => ({
+      quoteId,
+      address,
+      coverage: getCoverage(policy),
+      step: 'coverage',
+      product: 'Outage',
+    }),
+    [quoteId, address, policy]
+  );
 
   // Initialize the policy state in redux that UI uses
   useEffect(() => {
@@ -89,6 +89,40 @@ const PolicyCoveragePage = (props: Props) => {
       updatePolicy();
     }
   }, [policy.amount]);
+
+  useEffect(() => {
+    // Quotes query error handling
+    if (
+      quoteQueryResult.isError ||
+      (!quoteQueryResult.isLoading && isEmpty(quote))
+    ) {
+      if (
+        isEmpty(quote) ||
+        (quoteQueryResult.error &&
+          'status' in quoteQueryResult.error &&
+          quoteQueryResult.error.status === 404)
+      )
+        notFound();
+      else throw quoteQueryResult.error;
+    }
+
+    if (!quoteQueryResult.isFetching && quote) {
+      const completed = quote.data.metadata.completed_sections;
+      if (!completed.address) {
+        router.push('/');
+      } else if (!completed.coverage) {
+        router.push(`/policy-coverage?quoteId=${quoteId}`);
+      }
+    }
+  }, [
+    quote,
+    quoteQueryResult.isError,
+    quoteQueryResult.isFetching,
+    quoteQueryResult.error,
+    quoteQueryResult.isLoading,
+    quoteId,
+    router,
+  ]);
 
   async function updatePolicy() {
     try {
@@ -124,24 +158,6 @@ const PolicyCoveragePage = (props: Props) => {
     }
   }
 
-  // Quotes query error handling
-  if (
-    quoteQueryResult.isError ||
-    (!quoteQueryResult.isLoading && isEmpty(quote))
-  ) {
-    const error = quoteQueryResult.error;
-    if (isEmpty(quote) || (error && 'status' in error && error.status === 404))
-      return notFound();
-    else throw error;
-  }
-
-  if (!quoteQueryResult.isFetching && quote) {
-    const completed = quote.data.metadata.completed_sections;
-    if (!completed.address) {
-      router.push('/');
-    }
-  }
-
   return (
     <>
       {loading && <Loader />}
@@ -153,7 +169,12 @@ const PolicyCoveragePage = (props: Props) => {
       <BottomNavBar
         buttonLabel="Next: Business Information"
         onButtonClick={onSubmit}
-        disabled={disableSubmit}
+        disabled={
+          quoteQueryResult.isLoading ||
+          createQuoteResult.isLoading ||
+          !quote?.data.quoteEstimates ||
+          !quote?.data.selectedEstimateId
+        }
       />
       <InstructionModal
         hide={isModelHidden}

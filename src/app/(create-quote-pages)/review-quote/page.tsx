@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { isEmpty } from 'lodash';
 import toast from 'react-hot-toast';
@@ -30,7 +30,10 @@ const ReviewPage = (props: Props) => {
 
   const dispatch = useAppDispatch();
 
-  const quoteId = searchParams.get('quoteId') || '';
+  const quoteId = useMemo(
+    () => searchParams.get('quoteId') || '',
+    [searchParams]
+  );
 
   const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
   const [createQuote, createQuoteResult] = useCreateQuoteMutation();
@@ -42,20 +45,18 @@ const ReviewPage = (props: Props) => {
   const coverage = getCoverageFromQuote(quote);
   const businessInformation = getBusinessInfoFromQuote(quote);
 
-  const createQuoteParams: ICreateQuoteParams = {
-    quoteId,
-    address,
-    coverage,
-    businessInformation,
-    checkout: {},
-    step: 'checkout',
-    product: 'Outage',
-  };
-
-  const disableSubmit =
-    quoteQueryResult.isLoading ||
-    createQuoteResult.isLoading ||
-    !quote?.programInfo;
+  const createQuoteParams: ICreateQuoteParams = useMemo(
+    () => ({
+      quoteId,
+      address,
+      coverage,
+      businessInformation,
+      checkout: {},
+      step: 'checkout',
+      product: 'Outage',
+    }),
+    [quoteId, address, coverage, businessInformation]
+  );
 
   useEffect(() => {
     const completeQuoteCheckout = async () => {
@@ -78,27 +79,39 @@ const ReviewPage = (props: Props) => {
     }
   }, [quote]);
 
-  // Quotes query error handling
-  if (
-    quoteQueryResult.isError ||
-    (!quoteQueryResult.isLoading && isEmpty(quote))
-  ) {
-    const error = quoteQueryResult.error;
-    if (isEmpty(quote) || (error && 'status' in error && error.status === 404))
-      return notFound();
-    else throw error;
-  }
-
-  if (!quoteQueryResult.isFetching && quote) {
-    const completed = quote.data.metadata.completed_sections;
-    if (!completed.address) {
-      router.push('/');
-    } else if (!completed.coverage) {
-      router.push(`/policy-coverage?quoteId=${quoteId}`);
-    } else if (!completed.businessInformation) {
-      router.push(`/business-info/business-entity-details?quoteId=${quoteId}`);
+  useEffect(() => {
+    // Quotes query error handling
+    if (
+      quoteQueryResult.isError ||
+      (!quoteQueryResult.isLoading && isEmpty(quote))
+    ) {
+      if (
+        isEmpty(quote) ||
+        (quoteQueryResult.error &&
+          'status' in quoteQueryResult.error &&
+          quoteQueryResult.error.status === 404)
+      )
+        notFound();
+      else throw quoteQueryResult.error;
     }
-  }
+
+    if (!quoteQueryResult.isFetching && quote) {
+      const completed = quote.data.metadata.completed_sections;
+      if (!completed.address) {
+        router.push('/');
+      } else if (!completed.coverage) {
+        router.push(`/policy-coverage?quoteId=${quoteId}`);
+      }
+    }
+  }, [
+    quote,
+    quoteQueryResult.isError,
+    quoteQueryResult.isFetching,
+    quoteQueryResult.error,
+    quoteQueryResult.isLoading,
+    quoteId,
+    router,
+  ]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -143,7 +156,11 @@ const ReviewPage = (props: Props) => {
       />
       <BottomNavBar
         buttonLabel="Next: Checkout"
-        disabled={disableSubmit}
+        disabled={
+          quoteQueryResult.isLoading ||
+          createQuoteResult.isLoading ||
+          !quote?.programInfo
+        }
         onButtonClick={() =>
           window.open(quote?.programInfo[0].data.program_url, '_blank')
         }

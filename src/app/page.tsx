@@ -38,18 +38,21 @@ export default function Home() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
+  const [createQuote, _] = useCreateQuoteMutation();
 
   const [address, setAddress] = useState<IAddress>(initAddressState);
   const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
   const [inputError, setInputError] = useState<string | undefined>();
   const [apiLoading, setApiLoading] = useState(false);
 
-  const createQuoteParams: ICreateQuoteParams = {
-    address,
-    step: 'address',
-    product: 'Outage',
-  };
+  const createQuoteParams: ICreateQuoteParams = useMemo(
+    () => ({
+      address,
+      step: 'address',
+      product: 'Outage',
+    }),
+    [address]
+  );
 
   const formik = useFormik({
     initialValues: getQuoteConfig.initialValues,
@@ -86,12 +89,6 @@ export default function Home() {
     [data]
   );
 
-  const disableSubmit =
-    apiLoading ||
-    isFetching ||
-    formik.isSubmitting ||
-    address === initAddressState;
-
   useEffect(() => {
     !isFetching && setAutocompleteOptions(options);
 
@@ -109,11 +106,13 @@ export default function Home() {
     }
   }, [data, options, isFetching]);
 
-  // SmartyStreets api error handling
-  if (formik.values.address !== '' && isError) {
-    if ('status' in error && error.status === 404) return notFound();
-    else throw error;
-  }
+  useEffect(() => {
+    // SmartyStreets api error handling
+    if (formik.values.address !== '' && isError) {
+      if ('status' in error && error.status === 404) notFound();
+      else throw error;
+    }
+  }, [formik.values.address, isError, error]);
 
   return (
     <PageWrapper>
@@ -161,7 +160,12 @@ export default function Home() {
           <Button
             className="w-full text-sm md:w-2/5"
             type="submit"
-            disabled={disableSubmit}
+            disabled={
+              apiLoading ||
+              isFetching ||
+              formik.isSubmitting ||
+              address === initAddressState
+            }
           >
             Get Your Quote
           </Button>
