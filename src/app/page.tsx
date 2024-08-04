@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useAppDispatch } from '@/store/hooks';
 import { useAutocompleteQuery } from '@/store/api/baseApi';
 import { useCreateQuoteMutation } from '@/store/api/adaptiveApiSlice';
-import { IAddress, ICreateQuoteParams } from '@/store/api/types';
+import { IAddress, ICreateQuoteParams, IStep } from '@/store/api/types';
 import {
   changeCoveragePolicy,
   initPolicyState,
@@ -33,46 +33,39 @@ import Image from 'next/image';
 import Button from '@/elements/buttons/Button';
 import FormikInputField from '@/components/common/FormikInputField';
 import Loader from '@/components/common/Loader';
+import { useCreateQuote } from '@/config/useCreateQuote';
 
 export default function Home() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-
-  const [createQuote, _] = useCreateQuoteMutation();
+  const { handleSubmitQuote } = useCreateQuote();
 
   const [address, setAddress] = useState<IAddress>(initAddressState);
   const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
   const [inputError, setInputError] = useState<string | undefined>();
   const [apiLoading, setApiLoading] = useState(false);
 
-  const createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      address,
-      step: 'address',
-      product: 'Outage',
-    }),
-    [address]
-  );
+  const onSubmit = async (values: any, { setSubmitting }: any) => {
+    try {
+      setApiLoading(true);
+      const res = await handleSubmitQuote(IStep.address, address);
+      dispatch(changeCoveragePolicy(initPolicyState));
+      dispatch(setBusinessInformation(initBusinessInfoState));
+      router.push(`${res.id}/policy-coverage`);
+    } catch (error: any) {
+      setApiLoading(false);
+      setSubmitting(false);
+      if (error?.status === 400) {
+        toast.error('Please provide a valid address');
+        setInputError('Please provide a valid address');
+      } else toast.error('Something went wrong. Try again.');
+    }
+  };
 
   const formik = useFormik({
     initialValues: getQuoteConfig.initialValues,
     validationSchema: getQuoteSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        setApiLoading(true);
-        const res = await createQuote(createQuoteParams).unwrap();
-        dispatch(changeCoveragePolicy(initPolicyState));
-        dispatch(setBusinessInformation(initBusinessInfoState));
-        router.push(`policy-coverage?quoteId=${res.id}`);
-      } catch (error: any) {
-        setApiLoading(false);
-        setSubmitting(false);
-        if (error?.status === 400) {
-          toast.error('Please provide a valid address');
-          setInputError('Please provide a valid address');
-        } else toast.error('Something went wrong. Try again.');
-      }
-    },
+    onSubmit,
   });
 
   const { data, isFetching, isError, error } = useAutocompleteQuery(

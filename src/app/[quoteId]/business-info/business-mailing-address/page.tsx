@@ -8,10 +8,10 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   initAddressState,
   initBusinessInfoState,
-  selectBusinessBillingAddress,
   selectBusinessInformation,
-  setBusinessBillingAddress,
+  selectBusinessMailingAddress,
   setBusinessInformation,
+  setBusinessMailingAddress,
 } from '@/store/feature/business-info';
 import { useGetQuoteQuery } from '@/store/api/adaptiveApiSlice';
 import {
@@ -19,7 +19,6 @@ import {
   getBusinessInfoFromQuote,
   getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
-import { IAddress } from '@/store/api/types';
 import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import { businessAddressConfig } from '@/config/businessAddressConfig';
 import { businessAddressSchema } from '@/validations/quoteValidations';
@@ -27,29 +26,22 @@ import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoF
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import Loader from '@/components/common/Loader';
+import { IAddress } from '@/store/api/types';
+import { useCreateQuote } from '@/config/useCreateQuote';
 
 type Props = {};
 
-const BusinessBillingPage = (props: Props) => {
+const BusinessMailingPage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const {
+    quoteId,
+    quote,
+    quoteQueryResult: { isLoading, isError, error, isFetching },
+  } = useCreateQuote();
 
   const dispatch = useAppDispatch();
+  const businessAddress = useAppSelector(selectBusinessMailingAddress);
   const businessInformation = useAppSelector(selectBusinessInformation);
-  const businessAddress = useAppSelector(selectBusinessBillingAddress);
-
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
-
-  const {
-    data: quote,
-    isLoading,
-    isError,
-    error,
-    isFetching,
-  } = useGetQuoteQuery(quoteId);
 
   const [loading, setLoading] = useState(quote ? false : true);
 
@@ -58,9 +50,9 @@ const BusinessBillingPage = (props: Props) => {
     initialValues: businessAddress,
     validationSchema: businessAddressSchema,
     onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessBillingAddress(values));
+      dispatch(setBusinessMailingAddress(values));
       setSubmitting(false);
-      router.push(`business-revenue?quoteId=${quoteId}`);
+      router.push(`/${quoteId}/business-info/business-billing-address`);
     },
   });
 
@@ -78,7 +70,7 @@ const BusinessBillingPage = (props: Props) => {
         dispatch(setBusinessInformation(businessInfo));
       } else if (isEqual(businessAddress, initAddressState)) {
         const address = getAddressFromQuote(quote);
-        dispatch(setBusinessBillingAddress(address));
+        dispatch(setBusinessMailingAddress(address));
       }
       setLoading(false);
     }
@@ -116,7 +108,7 @@ const BusinessBillingPage = (props: Props) => {
   });
 
   return (
-    <BusinessInfoFormsContainer title="Enter your business billing address">
+    <BusinessInfoFormsContainer title="Enter your business mailing address">
       <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
         {loading && <Loader />}
         <FormikInputField {...getFieldAttrs('street')} />
@@ -137,4 +129,4 @@ const BusinessBillingPage = (props: Props) => {
   );
 };
 
-export default BusinessBillingPage;
+export default BusinessMailingPage;

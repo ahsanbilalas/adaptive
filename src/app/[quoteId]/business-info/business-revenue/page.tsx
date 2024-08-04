@@ -23,7 +23,11 @@ import {
   getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
 import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
-import { IBusinessInformation, ICreateQuoteParams } from '@/store/api/types';
+import {
+  IBusinessInformation,
+  ICreateQuoteParams,
+  IStep,
+} from '@/store/api/types';
 import { businessRevenueSchema } from '@/validations/quoteValidations';
 import { businessRevenueConfig } from '@/config/businessRevenueConfig';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
@@ -31,19 +35,16 @@ import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import Loader from '@/components/common/Loader';
 import { IBusinessRevenue } from '@/store/feature/business-info/types';
+import { useCreateQuote } from '@/config/useCreateQuote';
 
 type Props = {};
 
 const BusinessRevenuePage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
+  const { quoteId, quote, quoteQueryResult, handleSubmitQuote } =
+    useCreateQuote();
 
-  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
   const [createQuote, createQuoteResult] = useCreateQuoteMutation();
 
   const [loading, setLoading] = useState(quote ? false : true);
@@ -58,16 +59,16 @@ const BusinessRevenuePage = (props: Props) => {
   const coverage = getCoverageFromQuote(quote);
   const businessInfoFromQuote = getBusinessInfoFromQuote(quote);
 
-  const createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      quoteId,
-      address,
-      coverage,
-      step: 'businessInformation',
-      product: 'Outage',
-    }),
-    [quoteId, address, coverage]
-  );
+  // const createQuoteParams: ICreateQuoteParams = useMemo(
+  //   () => ({
+  //     quoteId,
+  //     address,
+  //     coverage,
+  //     step: 'businessInformation',
+  //     product: 'Outage',
+  //   }),
+  //   [quoteId, address, coverage]
+  // );
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -76,13 +77,11 @@ const BusinessRevenuePage = (props: Props) => {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         dispatch(setBusinessRevenue(values));
-        const params = {
-          ...createQuoteParams,
-          businessInformation: { ...businessInformation, ...values },
-        };
+        const params = { ...businessInformation, ...values };
+
         if (!isEqual(businessInfoFromQuote, params))
-          await createQuote(params).unwrap();
-        router.push(`/review-quote?quoteId=${quoteId}`);
+          await handleSubmitQuote(IStep.businessInformation, params);
+        router.push(`/${quoteId}/review-quote`);
       } catch (error: any) {
         if (error?.status === 400 && Array.isArray(error?.data?.message)) {
           error?.data?.message.map((err: string) => toast.error(err));
@@ -128,7 +127,7 @@ const BusinessRevenuePage = (props: Props) => {
       if (!completed.address) {
         router.push('/');
       } else if (!completed.coverage) {
-        router.push(`/policy-coverage?quoteId=${quoteId}`);
+        router.push(`/${quoteId}/policy-coverage`);
       }
     }
   }, [

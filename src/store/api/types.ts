@@ -25,8 +25,15 @@ export interface IBusinessInformation {
   revenueRangeTo: number;
 }
 
+export enum IStep {
+  'address' = 'address',
+  'coverage' = 'coverage',
+  'businessInformation' = 'businessInformation',
+  'checkout' = 'checkout',
+}
+
 export interface ICreateQuoteParams {
-  step: "address" | "coverage" | "businessInformation" | "checkout";
+  step: IStep;
   quoteId?: string;
   product: string;
   address: IAddress;

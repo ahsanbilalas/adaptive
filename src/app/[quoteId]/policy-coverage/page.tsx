@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { isEmpty, isEqual } from 'lodash';
 import toast from 'react-hot-toast';
@@ -7,7 +7,7 @@ import {
   useCreateQuoteMutation,
   useGetQuoteQuery,
 } from '@/store/api/adaptiveApiSlice';
-import { ICreateQuoteParams } from '@/store/api/types';
+import { ICreateQuoteParams, IStep } from '@/store/api/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   initBusinessInfoState,
@@ -28,41 +28,44 @@ import BottomNavBar from '@/components/common/BottomNavBar';
 import InstructionModal from '@/components/policy-coverage/InstructionModal';
 import PolicyCoverageUI from '@/components/policy-coverage/PolicyCoverageUI';
 import Loader from '@/components/common/Loader';
+import { useCreateQuote } from '@/config/useCreateQuote';
+import { useFormik } from 'formik';
+import { coverageValidation } from '@/validations/quoteValidations';
 
 type Props = {};
 
 const PolicyCoveragePage = (props: Props) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { quoteId, quote, quoteQueryResult, handleSubmitQuote } =
+    useCreateQuote();
 
   const [isModelHidden, setIsModelHidden] = useState(true);
   const [dateInputError, setDateInputError] = useState('');
 
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
+  // const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
+  // const [createQuote, createQuoteResult] = useCreateQuoteMutation();
 
-  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
-  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
-
-  const [loading, setLoading] = useState(quote ? false : true);
+  const [loading, setLoading] = useState(false);
 
   const address = useMemo(() => getAddressFromQuote(quote), [quote]);
 
   const policy = useAppSelector(selectPolicyCoverage);
 
-  let createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      quoteId,
-      address,
-      coverage: getCoverage(policy),
-      step: 'coverage',
-      product: 'Outage',
-    }),
-    [quoteId, address, policy]
-  );
+  const updatePolicy = useCallback(async () => {
+    try {
+      const payload = getCoverage(policy);
+      const res = await handleSubmitQuote(IStep.coverage, payload);
+      return res;
+    } catch (error: any) {
+      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
+        error?.data?.message.forEach((err: string) => toast.error(err));
+      } else {
+        toast.error('Something went wrong. Try again.');
+      }
+      throw error;
+    }
+  }, [handleSubmitQuote, policy]);
 
   // Initialize the policy state in redux that UI uses
   useEffect(() => {
@@ -77,18 +80,18 @@ const PolicyCoveragePage = (props: Props) => {
       // init policy coverage & quote estimates
       updatePolicy();
     }
-  }, [quote]);
+  }, [dispatch, quote, updatePolicy]);
 
-  // Updates quote estimates when coverage amount changes
-  useEffect(() => {
-    if (
-      quote &&
-      quote.data.quoteEstimates &&
-      quote.data.quoteEstimates[0].coverageAmount !== policy.amount
-    ) {
-      updatePolicy();
-    }
-  }, [policy.amount]);
+  // // Updates quote estimates when coverage amount changes
+  // useEffect(() => {
+  //   if (
+  //     quote &&
+  //     quote.data.quoteEstimates &&
+  //     quote.data.quoteEstimates[0].coverageAmount !== policy.amount
+  //   ) {
+  //     updatePolicy();
+  //   }
+  // }, [policy.amount, quote, updatePolicy]);
 
   useEffect(() => {
     // Quotes query error handling
@@ -111,7 +114,7 @@ const PolicyCoveragePage = (props: Props) => {
       if (!completed.address) {
         router.push('/');
       } else if (!completed.coverage) {
-        router.push(`/policy-coverage?quoteId=${quoteId}`);
+        router.push(`/${quoteId}/policy-coverage`);
       }
     }
   }, [
@@ -124,20 +127,6 @@ const PolicyCoveragePage = (props: Props) => {
     router,
   ]);
 
-  async function updatePolicy() {
-    try {
-      const res = await createQuote(createQuoteParams).unwrap();
-      return res;
-    } catch (error: any) {
-      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
-        error?.data?.message.forEach((err: string) => toast.error(err));
-      } else {
-        toast.error('Something went wrong. Try again.');
-      }
-      throw error;
-    }
-  }
-
   async function onSubmit() {
     try {
       if (
@@ -146,9 +135,7 @@ const PolicyCoveragePage = (props: Props) => {
       ) {
         await updatePolicy();
       }
-      router.push(
-        `/business-info/business-entity-details?quoteId=${quote?.id}`
-      );
+      router.push(`/${quote?.id}/business-info/business-entity-details`);
     } catch (error: any) {
       if (error?.status === 400 && Array.isArray(error?.data?.message)) {
         error?.data?.message.map((err: string) => {
@@ -158,6 +145,21 @@ const PolicyCoveragePage = (props: Props) => {
     }
   }
 
+  const initialValues = useMemo(() => {
+    return {
+      coverageAmount: 100000,
+      estimateId: '',
+      effectiveDate: '08/03/2024',
+    };
+  }, []);
+
+  const formik = useFormik({
+    enableReinitialize: true,
+    initialValues,
+    validationSchema: coverageValidation,
+    onSubmit,
+  });
+
   return (
     <>
       {loading && <Loader />}
@@ -165,15 +167,17 @@ const PolicyCoveragePage = (props: Props) => {
         onShowModal={() => setIsModelHidden(false)}
         address={address}
         dateInputError={dateInputError}
+        values={formik.values}
+        setFieldValue={formik.setFieldValue}
       />
       <BottomNavBar
         buttonLabel="Next: Business Information"
         onButtonClick={onSubmit}
         disabled={
           quoteQueryResult.isLoading ||
-          createQuoteResult.isLoading ||
           !quote?.data.quoteEstimates ||
           !quote?.data.selectedEstimateId
+          // createQuoteResult.isLoading ||
         }
       />
       <InstructionModal

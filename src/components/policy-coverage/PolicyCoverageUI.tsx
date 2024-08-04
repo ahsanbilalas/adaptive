@@ -24,6 +24,8 @@ type Props = {
   onShowModal: () => void;
   dateInputError: string;
   address: IAddress;
+  values: any;
+  setFieldValue: (key: string, value: any) => void;
 };
 
 const PolicyCoverageUI = (props: Props) => {
@@ -40,10 +42,10 @@ const PolicyCoverageUI = (props: Props) => {
       ? minDate
       : moment.utc(policy.effectiveDateUtc).format('YYYY-MM-DD');
 
-  function handleDateChange(e: ChangeEvent<HTMLInputElement>) {
+  const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newDate = new Date(e.currentTarget.value);
     dispatch(changeEffectiveDate(newDate.toISOString()));
-  }
+  };
 
   return (
     <>
@@ -54,18 +56,18 @@ const PolicyCoverageUI = (props: Props) => {
       <HourCoverage
         address={props.address}
         coverageQuotes={policy.quoteEstimates}
-        selectedQuoteId={policy.selectedEstimateId}
-        onPolicyQuoteChange={(value: string) =>
-          dispatch(changeSelectedQuoteId(value))
-        }
+        selectedQuoteId={props.values.coverageAmount}
+        onPolicyQuoteChange={(value: string) => {
+          props.setFieldValue('coverageAmount', value);
+        }}
       />
       <CoverageLimit
         selectedDuration={selectedEstimate?.duration || 16}
-        selectedLimit={policy.amount}
+        selectedLimit={props.values.coverageAmount}
         coverageLimitOpts={policyCoverageConfig.coverageLimitOpts}
-        onPolicyLimitChange={(value: number) =>
-          dispatch(changeCoverageAmount(value))
-        }
+        onPolicyLimitChange={(value: number) => {
+          props.setFieldValue('coverageAmount', value);
+        }}
       />
       <InputFieldContainer className="mb-12">
         <p>Effective Date</p>

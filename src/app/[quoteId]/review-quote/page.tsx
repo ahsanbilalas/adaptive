@@ -1,7 +1,7 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
-import { isEmpty } from 'lodash';
+import { isEmpty, isEqual } from 'lodash';
 import toast from 'react-hot-toast';
 import {
   useCreateQuoteMutation,
@@ -45,30 +45,17 @@ const ReviewPage = (props: Props) => {
   const coverage = getCoverageFromQuote(quote);
   const businessInformation = getBusinessInfoFromQuote(quote);
 
-  const createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      quoteId,
-      address,
-      coverage,
-      businessInformation,
-      checkout: {},
-      step: 'checkout',
-      product: 'Outage',
-    }),
-    [quoteId, address, coverage, businessInformation]
-  );
+  const completeQuoteCheckout = useCallback(async () => {
+    try {
+      await createQuote(createQuoteParams).unwrap();
+    } catch (error: any) {
+      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
+        error?.data?.message.map((err: string) => toast.error(err));
+      } else toast.error('An error ocurred while checking out');
+    }
+  }, [createQuote, createQuoteParams]);
 
-  useEffect(() => {
-    const completeQuoteCheckout = async () => {
-      try {
-        await createQuote(createQuoteParams).unwrap();
-      } catch (error: any) {
-        if (error?.status === 400 && Array.isArray(error?.data?.message)) {
-          error?.data?.message.map((err: string) => toast.error(err));
-        } else toast.error('An error ocurred while checking out');
-      }
-    };
-
+  const handleSubmitCheckout = async () => {
     if (!quoteQueryResult.isFetching && quote) {
       const completed = quote.data.metadata.completed_sections;
       dispatch(changeCoveragePolicy(policy));
@@ -77,7 +64,7 @@ const ReviewPage = (props: Props) => {
       }
       setLoading(false);
     }
-  }, [quote]);
+  };
 
   useEffect(() => {
     // Quotes query error handling
