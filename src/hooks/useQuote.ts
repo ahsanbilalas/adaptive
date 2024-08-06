@@ -1,0 +1,89 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { notFound, useParams, usePathname, useRouter } from 'next/navigation';
+import { LoadingBarRef } from 'react-top-loading-bar';
+import {
+  useCreateQuoteMutation,
+  useGetQuoteQuery,
+} from '@/store/api/adaptiveApiSlice';
+import { Step } from '@/store/api/types';
+import { isEmpty } from 'lodash';
+
+export const useQuote = () => {
+  const { quoteId } = useParams<{ quoteId: string }>();
+  const pathname = usePathname();
+  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
+  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
+  const loadingRef = useRef<LoadingBarRef>(null);
+  const router = useRouter();
+
+  const handleQuoteMutation = useCallback(
+    async (step: Step, payload: any) => {
+      try {
+        loadingRef.current?.continuousStart();
+        await createQuote({
+          quoteId,
+          step,
+          product: 'Outage',
+          [step]: payload,
+        }).unwrap();
+        loadingRef.current?.complete();
+      } catch (error: any) {
+        loadingRef.current?.complete();
+        throw error;
+      }
+    },
+    [createQuote, quoteId]
+  );
+
+  useEffect(() => {
+    if (quoteQueryResult.isLoading) loadingRef.current?.continuousStart();
+    else loadingRef.current?.complete();
+  }, [quoteQueryResult.isLoading]);
+
+  // Quotes query error handling
+  useEffect(() => {
+    if (
+      quoteQueryResult.isError ||
+      (!quoteQueryResult.isFetching && isEmpty(quote))
+    ) {
+      if (
+        isEmpty(quote) ||
+        (quoteQueryResult.error &&
+          'status' in quoteQueryResult.error &&
+          quoteQueryResult.error.status === 404)
+      )
+        notFound();
+      else throw quoteQueryResult.error;
+    }
+
+    if (!quoteQueryResult.isFetching && quote) {
+      const completed = quote.data.metadata.completed_sections;
+      const page = pathname.split('/').at(-1) || '';
+      if (
+        !completed.coverage &&
+        ['business-details', 'review-quote'].includes(page)
+      ) {
+        router.push(`/${quoteId}/policy-selection`);
+      } else if (!completed.businessInformation && page === 'review-quote') {
+        router.push(`/${quoteId}/business-info/business-details`);
+      }
+    }
+  }, [
+    quoteId,
+    quote,
+    quoteQueryResult.isError,
+    quoteQueryResult.isFetching,
+    quoteQueryResult.error,
+    router,
+    pathname,
+  ]);
+
+  return {
+    quoteId,
+    quote,
+    quoteQueryResult,
+    createQuoteResult,
+    handleQuoteMutation,
+    loadingRef,
+  };
+};

@@ -1,3 +1,10 @@
+export enum Step {
+  address = 'address',
+  coverage = 'coverage',
+  businessInformation = 'businessInformation',
+  checkout = 'checkout',
+}
+
 export interface IAddress {
   street: string;
   street2: string;
@@ -26,10 +33,10 @@ export interface IBusinessInformation {
 }
 
 export interface ICreateQuoteParams {
-  step: "address" | "coverage" | "businessInformation" | "checkout";
+  step: Step;
   quoteId?: string;
   product: string;
-  address: IAddress;
+  address?: IAddress;
   coverage?: ICoverage;
   businessInformation?: IBusinessInformation;
   checkout?: {};

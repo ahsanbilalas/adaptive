@@ -1,8 +1,8 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
-import { notFound, useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFormik } from 'formik';
-import { isEmpty, isEqual } from 'lodash';
+import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -13,7 +13,6 @@ import {
   setBusinessBillingAddress,
   setBusinessInformation,
 } from '@/store/feature/business-info';
-import { useGetQuoteQuery } from '@/store/api/adaptiveApiSlice';
 import {
   getAddressFromQuote,
   getBusinessInfoFromQuote,
@@ -26,32 +25,23 @@ import { businessAddressSchema } from '@/validations/quoteValidations';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
-import Loader from '@/components/common/Loader';
+import { useQuote } from '@/hooks/useQuote';
+import LoadingBar from 'react-top-loading-bar';
 
 type Props = {};
 
 const BusinessBillingPage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  const {
+    quote,
+    quoteQueryResult: { isLoading },
+    loadingRef,
+  } = useQuote();
 
   const dispatch = useAppDispatch();
   const businessInformation = useAppSelector(selectBusinessInformation);
   const businessAddress = useAppSelector(selectBusinessBillingAddress);
-
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
-
-  const {
-    data: quote,
-    isLoading,
-    isError,
-    error,
-    isFetching,
-  } = useGetQuoteQuery(quoteId);
-
-  const [loading, setLoading] = useState(quote ? false : true);
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -60,7 +50,7 @@ const BusinessBillingPage = (props: Props) => {
     onSubmit: (values, { setSubmitting }) => {
       dispatch(setBusinessBillingAddress(values));
       setSubmitting(false);
-      router.push(`business-revenue?quoteId=${quoteId}`);
+      router.push(`business-revenue`);
     },
   });
 
@@ -80,30 +70,8 @@ const BusinessBillingPage = (props: Props) => {
         const address = getAddressFromQuote(quote);
         dispatch(setBusinessBillingAddress(address));
       }
-      setLoading(false);
     }
-  }, [quote]);
-
-  useEffect(() => {
-    // Quotes query error handling
-    if (isError || (!isLoading && isEmpty(quote))) {
-      if (
-        isEmpty(quote) ||
-        (error && 'status' in error && error.status === 404)
-      )
-        notFound();
-      else throw error;
-    }
-
-    if (!isFetching && quote) {
-      const completed = quote.data.metadata.completed_sections;
-      if (!completed.address) {
-        router.push('/');
-      } else if (!completed.coverage) {
-        router.push(`/policy-coverage?quoteId=${quoteId}`);
-      }
-    }
-  }, [quote, isError, isFetching, error, isLoading, quoteId, router]);
+  }, [quote, businessInformation, businessAddress, dispatch]);
 
   const getFieldAttrs = (fieldName: keyof IAddress, extraAttrs: any = {}) => ({
     ...extraAttrs,
@@ -117,8 +85,8 @@ const BusinessBillingPage = (props: Props) => {
 
   return (
     <BusinessInfoFormsContainer title="Enter your business billing address">
+      <LoadingBar ref={loadingRef} />
       <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
-        {loading && <Loader />}
         <FormikInputField {...getFieldAttrs('street')} />
         <FormikInputField {...getFieldAttrs('street2')} />
         <FormikInputField {...getFieldAttrs('city')} />

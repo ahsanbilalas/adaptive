@@ -25,31 +25,23 @@ import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoF
 import BottomNavBar from '@/components/common/BottomNavBar';
 import FormikInputField from '@/components/common/FormikInputField';
 import Loader from '@/components/common/Loader';
+import { useQuote } from '@/hooks/useQuote';
+import LoadingBar from 'react-top-loading-bar';
 
 type Props = {};
 
 const BusinessEntityPage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  const {
+    quote,
+    quoteQueryResult: { isFetching },
+    loadingRef,
+  } = useQuote();
 
   const dispatch = useAppDispatch();
   const businessDetails = useAppSelector(selectBusinessDetails);
   const businessInformation = useAppSelector(selectBusinessInformation);
-
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
-
-  const {
-    data: quote,
-    isLoading,
-    isError,
-    error,
-    isFetching,
-  } = useGetQuoteQuery(quoteId);
-
-  const [loading, setLoading] = useState(quote ? false : true);
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -58,7 +50,7 @@ const BusinessEntityPage = (props: Props) => {
     onSubmit: (values, { setSubmitting }) => {
       dispatch(setBusinessDetails(values));
       setSubmitting(false);
-      router.push(`business-mailing-address?quoteId=${quoteId}`);
+      router.push(`business-mailing-address`);
     },
   });
 
@@ -78,30 +70,8 @@ const BusinessEntityPage = (props: Props) => {
         const businessInfo = getBusinessInfoFromQuote(quote);
         dispatch(setBusinessInformation(businessInfo));
       }
-      setLoading(false);
     }
-  }, [quote]);
-
-  useEffect(() => {
-    // Quotes query error handling
-    if (isError || (!isLoading && isEmpty(quote))) {
-      if (
-        isEmpty(quote) ||
-        (error && 'status' in error && error.status === 404)
-      )
-        notFound();
-      else throw error;
-    }
-
-    if (!isFetching && quote) {
-      const completed = quote.data.metadata.completed_sections;
-      if (!completed.address) {
-        router.push('/');
-      } else if (!completed.coverage) {
-        router.push(`/policy-coverage?quoteId=${quoteId}`);
-      }
-    }
-  }, [quote, isError, isFetching, error, isLoading, quoteId, router]);
+  }, [quote, businessInformation, dispatch]);
 
   const getFieldAttrs = (
     fieldName: keyof IBusinessDetails,
@@ -118,8 +88,8 @@ const BusinessEntityPage = (props: Props) => {
 
   return (
     <BusinessInfoFormsContainer title="Enter your business details">
+      <LoadingBar ref={loadingRef} />
       <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
-        {loading && <Loader />}
         <FormikInputField {...getFieldAttrs('businessType')} />
         <FormikInputField {...getFieldAttrs('businessName')} />
         <FormikInputField {...getFieldAttrs('contactName')} />
@@ -132,7 +102,7 @@ const BusinessEntityPage = (props: Props) => {
         />
         <BottomNavBar
           buttonLabel="Next: Business Mailing Address"
-          disabled={formik.isSubmitting || isLoading}
+          disabled={formik.isSubmitting || isFetching}
         />
       </form>
     </BusinessInfoFormsContainer>

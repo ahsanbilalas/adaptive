@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useAppDispatch } from '@/store/hooks';
 import { useAutocompleteQuery } from '@/store/api/baseApi';
 import { useCreateQuoteMutation } from '@/store/api/adaptiveApiSlice';
-import { IAddress, ICreateQuoteParams } from '@/store/api/types';
+import { IAddress, ICreateQuoteParams, Step } from '@/store/api/types';
 import {
   changeCoveragePolicy,
   initPolicyState,
@@ -48,7 +48,7 @@ export default function Home() {
   const createQuoteParams: ICreateQuoteParams = useMemo(
     () => ({
       address,
-      step: 'address',
+      step: Step.address,
       product: 'Outage',
     }),
     [address]
@@ -63,7 +63,7 @@ export default function Home() {
         const res = await createQuote(createQuoteParams).unwrap();
         dispatch(changeCoveragePolicy(initPolicyState));
         dispatch(setBusinessInformation(initBusinessInfoState));
-        router.push(`policy-coverage?quoteId=${res.id}`);
+        router.push(`${res.id}/policy-selection`);
       } catch (error: any) {
         setApiLoading(false);
         setSubmitting(false);

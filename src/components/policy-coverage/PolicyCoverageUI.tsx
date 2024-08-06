@@ -1,93 +1,90 @@
 import React, { ChangeEvent } from 'react';
-import { find } from 'lodash';
-import moment from 'moment';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  changeCoverageAmount,
-  changeEffectiveDate,
-  changeSelectedQuoteId,
-  selectPolicyCoverage,
-} from '@/store/feature/policy-coverage';
-import { IAddress } from '@/store/api/types';
+import { IAddress, IQuoteEstimate } from '@/store/api/types';
 import { policyCoverageConfig } from '@/config/policyCoverageConfig';
-import { HorizontalLine } from '@/components/policy-coverage/style';
 import {
-  ErrorMessageText,
-  InputFieldContainer,
-} from '@/components/common/style';
+  PageWrapper,
+  HorizontalLine,
+  QuoteCardWrapper,
+} from '@/components/policy-coverage/style';
 import QuoteCard from './QuoteCard';
-import Input from '@/elements/inputs/Input';
 import HourCoverage from '@/components/policy-coverage/HourCoverage';
 import CoverageLimit from '@/components/policy-coverage/CoverageLimit';
+import FormikInputField from '@/components/common/FormikInputField';
 
 type Props = {
   onShowModal: () => void;
-  dateInputError: string;
   address: IAddress;
+  formik: any;
+  selectedEstimate: IQuoteEstimate;
+  quoteEstimates: IQuoteEstimate[];
 };
 
-const PolicyCoverageUI = (props: Props) => {
-  const dispatch = useAppDispatch();
-  const policy = useAppSelector(selectPolicyCoverage);
-  const selectedEstimate = find(policy.quoteEstimates, {
-    productId: policy.selectedEstimateId,
-  });
-
-  const date = new Date();
-  const minDate = moment(date).add(1, 'days').format('YYYY-MM-DD');
-  const selectedDate =
-    policy.effectiveDateUtc === ''
-      ? minDate
-      : moment.utc(policy.effectiveDateUtc).format('YYYY-MM-DD');
-
-  function handleDateChange(e: ChangeEvent<HTMLInputElement>) {
-    const newDate = new Date(e.currentTarget.value);
-    dispatch(changeEffectiveDate(newDate.toISOString()));
-  }
-
+const PolicyCoverageUI = ({
+  onShowModal,
+  address,
+  formik,
+  selectedEstimate,
+  quoteEstimates,
+}: Props) => {
   return (
-    <>
-      <div className="md:hidden">
-        <QuoteCard />
-        <HorizontalLine className="my-16" />
-      </div>
-      <HourCoverage
-        address={props.address}
-        coverageQuotes={policy.quoteEstimates}
-        selectedQuoteId={policy.selectedEstimateId}
-        onPolicyQuoteChange={(value: string) =>
-          dispatch(changeSelectedQuoteId(value))
-        }
-      />
-      <CoverageLimit
-        selectedDuration={selectedEstimate?.duration || 16}
-        selectedLimit={policy.amount}
-        coverageLimitOpts={policyCoverageConfig.coverageLimitOpts}
-        onPolicyLimitChange={(value: number) =>
-          dispatch(changeCoverageAmount(value))
-        }
-      />
-      <InputFieldContainer className="mb-12">
-        <p>Effective Date</p>
-        <Input
-          type="date"
-          value={selectedDate}
-          min={minDate}
-          onChange={handleDateChange}
-        />
-        {props.dateInputError !== '' && (
-          <ErrorMessageText>{props.dateInputError}</ErrorMessageText>
-        )}
-      </InputFieldContainer>
-      <div>
-        <p
-          className="w-fit cursor-pointer font-bold underline"
-          onClick={props.onShowModal}
-        >
-          See what this means
-        </p>
-      </div>
-    </>
+    <div className="pb-24">
+      <PageWrapper>
+        <div className="mr-auto w-full md:pr-10 lg:px-32">
+          <div className="md:hidden">
+            <QuoteCard
+              selectedEstimate={selectedEstimate}
+              effectiveDateUtc={new Date(
+                formik.values.effectiveDate
+              ).toISOString()}
+            />
+            <HorizontalLine className="my-16" />
+          </div>
+          <HourCoverage
+            address={address}
+            coverageQuotes={quoteEstimates}
+            selectedQuoteId={formik.values.estimateId}
+            onPolicyQuoteChange={(value: string) =>
+              formik.setFieldValue('estimateId', value)
+            }
+          />
+          <CoverageLimit
+            selectedDuration={selectedEstimate?.duration || 16}
+            selectedLimit={formik.values.coverageAmount}
+            coverageLimitOpts={policyCoverageConfig.coverageLimitOpts}
+            onPolicyLimitChange={(value: number) =>
+              formik.setFieldValue('coverageAmount', value)
+            }
+          />
+          <FormikInputField
+            type="date"
+            name="effectiveDate"
+            value={formik.values.effectiveDate}
+            error={formik.errors.effectiveDate}
+            touched={formik.touched.effectiveDate}
+            handleBlur={formik.handleBlur}
+            handleChange={formik.handleChange}
+          />
+          <div>
+            <p
+              className="mt-12 w-fit cursor-pointer font-bold underline"
+              onClick={onShowModal}
+            >
+              See what this means
+            </p>
+          </div>
+        </div>
+        <QuoteCardWrapper>
+          <div className="fixed right-10">
+            <QuoteCard
+              selectedEstimate={selectedEstimate}
+              effectiveDateUtc={new Date(
+                formik.values.effectiveDate
+              ).toISOString()}
+            />
+          </div>
+        </QuoteCardWrapper>
+      </PageWrapper>
+    </div>
   );
 };
 

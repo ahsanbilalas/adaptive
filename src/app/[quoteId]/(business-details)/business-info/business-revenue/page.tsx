@@ -4,6 +4,9 @@ import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { useFormik } from 'formik';
 import { isEmpty, isEqual } from 'lodash';
 import toast from 'react-hot-toast';
+import LoadingBar from 'react-top-loading-bar';
+import { useQuote } from '@/hooks/useQuote';
+import { IBusinessRevenue } from '@/store/feature/business-info/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   initBusinessInfoState,
@@ -13,60 +16,39 @@ import {
   setBusinessRevenue,
 } from '@/store/feature/business-info';
 import {
-  useCreateQuoteMutation,
-  useGetQuoteQuery,
-} from '@/store/api/adaptiveApiSlice';
-import {
-  getAddressFromQuote,
   getBusinessInfoFromQuote,
-  getCoverageFromQuote,
   getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
 import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
-import { IBusinessInformation, ICreateQuoteParams } from '@/store/api/types';
+import { IBusinessInformation, Step } from '@/store/api/types';
 import { businessRevenueSchema } from '@/validations/quoteValidations';
 import { businessRevenueConfig } from '@/config/businessRevenueConfig';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
-import Loader from '@/components/common/Loader';
-import { IBusinessRevenue } from '@/store/feature/business-info/types';
 
 type Props = {};
 
 const BusinessRevenuePage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const quoteId = useMemo(
-    () => searchParams.get('quoteId') || '',
-    [searchParams]
-  );
-
-  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
-  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
-
-  const [loading, setLoading] = useState(quote ? false : true);
+  const {
+    quoteId,
+    quote,
+    quoteQueryResult,
+    createQuoteResult,
+    loadingRef,
+    handleQuoteMutation,
+  } = useQuote();
 
   const dispatch = useAppDispatch();
   const businessRevenue = useAppSelector(selectBusinessRevenue);
   const businessInformation = useAppSelector(
     selectBusinessInformation
   ) as IBusinessInformation;
-
-  const address = getAddressFromQuote(quote);
-  const coverage = getCoverageFromQuote(quote);
-  const businessInfoFromQuote = getBusinessInfoFromQuote(quote);
-
-  const createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      quoteId,
-      address,
-      coverage,
-      step: 'businessInformation',
-      product: 'Outage',
-    }),
-    [quoteId, address, coverage]
+  const businessInfoFromQuote = useMemo(
+    () => getBusinessInfoFromQuote(quote),
+    [quote]
   );
 
   const formik = useFormik({
@@ -76,13 +58,10 @@ const BusinessRevenuePage = (props: Props) => {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         dispatch(setBusinessRevenue(values));
-        const params = {
-          ...createQuoteParams,
-          businessInformation: { ...businessInformation, ...values },
-        };
-        if (!isEqual(businessInfoFromQuote, params))
-          await createQuote(params).unwrap();
-        router.push(`/review-quote?quoteId=${quoteId}`);
+        const payload = { ...businessInformation, ...values };
+        if (!isEqual(businessInfoFromQuote, payload))
+          await handleQuoteMutation(Step.businessInformation, payload);
+        router.push(`/${quoteId}/review-quote`);
       } catch (error: any) {
         if (error?.status === 400 && Array.isArray(error?.data?.message)) {
           error?.data?.message.map((err: string) => toast.error(err));
@@ -103,43 +82,8 @@ const BusinessRevenuePage = (props: Props) => {
       ) {
         dispatch(setBusinessInformation(businessInfoFromQuote));
       }
-      setLoading(false);
     }
-  }, [quote]);
-
-  useEffect(() => {
-    // Quotes query error handling
-    if (
-      quoteQueryResult.isError ||
-      (!quoteQueryResult.isLoading && isEmpty(quote))
-    ) {
-      if (
-        isEmpty(quote) ||
-        (quoteQueryResult.error &&
-          'status' in quoteQueryResult.error &&
-          quoteQueryResult.error.status === 404)
-      )
-        notFound();
-      else throw quoteQueryResult.error;
-    }
-
-    if (!quoteQueryResult.isFetching && quote) {
-      const completed = quote.data.metadata.completed_sections;
-      if (!completed.address) {
-        router.push('/');
-      } else if (!completed.coverage) {
-        router.push(`/policy-coverage?quoteId=${quoteId}`);
-      }
-    }
-  }, [
-    quote,
-    quoteQueryResult.isError,
-    quoteQueryResult.isFetching,
-    quoteQueryResult.error,
-    quoteQueryResult.isLoading,
-    quoteId,
-    router,
-  ]);
+  }, [quote, businessInformation, businessInfoFromQuote, dispatch]);
 
   const getFieldAttrs = (
     fieldName: keyof IBusinessRevenue,
@@ -156,8 +100,8 @@ const BusinessRevenuePage = (props: Props) => {
 
   return (
     <BusinessInfoFormsContainer title="Business Revenue Range">
+      <LoadingBar ref={loadingRef} />
       <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
-        {loading && <Loader />}
         <FormikInputField {...getFieldAttrs('revenueRangeFrom')} />
         <FormikInputField {...getFieldAttrs('revenueRangeTo')} />
         <BottomNavBar
