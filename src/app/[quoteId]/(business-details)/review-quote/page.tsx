@@ -16,9 +16,7 @@ import { Title } from '@/components/business-info/style';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import DisabledInputField from '@/components/common/DisabledInputField';
 
-type Props = {};
-
-const ReviewPage = (props: Props) => {
+const ReviewPage = () => {
   const {
     quote,
     quoteQueryResult,

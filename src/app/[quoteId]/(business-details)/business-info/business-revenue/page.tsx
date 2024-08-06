@@ -27,9 +27,7 @@ import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoF
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 
-type Props = {};
-
-const BusinessRevenuePage = (props: Props) => {
+const BusinessRevenuePage = () => {
   const router = useRouter();
 
   const {

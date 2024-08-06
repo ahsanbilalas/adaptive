@@ -5,9 +5,7 @@ import Image from "next/image";
 import React from "react";
 import { InfoContainer, NavbarIconContainer, NavbarWrapper } from "@/components/common/style";
 
-type Props = {};
-
-const Navbar = (props: Props) => {
+const Navbar = () => {
   return (
     <NavbarWrapper>
       <NavbarIconContainer>

@@ -28,9 +28,7 @@ import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import LoadingBar from 'react-top-loading-bar';
 
-type Props = {};
-
-const BusinessMailingPage = (props: Props) => {
+const BusinessMailingPage = () => {
   const router = useRouter();
 
   const {

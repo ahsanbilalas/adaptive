@@ -1,8 +1,6 @@
 import React from "react";
 
-type Props = {};
-
-const LeftArrowIcon = (props: Props) => {
+const LeftArrowIcon = () => {
   return (
     <svg
       width="26"

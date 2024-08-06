@@ -1,8 +1,6 @@
 import React from "react";
 
-type Props = {};
-
-const CrossIcon = (props: Props) => {
+const CrossIcon = () => {
   return (
     <svg
       width="40"
