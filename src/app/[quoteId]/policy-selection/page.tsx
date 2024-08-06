@@ -7,14 +7,13 @@ import { find } from 'lodash';
 import toast from 'react-hot-toast';
 import { policySelectionSchema } from '@/validations/quoteValidations';
 import { useAppDispatch } from '@/store/hooks';
+import { useQuote } from '@/hooks/useQuote';
 import { ICoverage, IQuoteEstimate, Step } from '@/store/api/types';
 import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import {
   getAddressFromQuote,
   getCoverageFromQuote,
-  getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
-import { useQuote } from '@/hooks/useQuote';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import InstructionModal from '@/components/policy-coverage/InstructionModal';
 import PolicyCoverageUI from '@/components/policy-coverage/PolicyCoverageUI';

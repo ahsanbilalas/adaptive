@@ -2,11 +2,7 @@
 import React, { useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
-import { isEqual } from 'lodash';
-import {
-  changeCoveragePolicy,
-  initPolicyState,
-} from '@/store/feature/policy-coverage';
+import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import { useAppDispatch } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
 import { Step } from '@/store/api/types';
