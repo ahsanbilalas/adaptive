@@ -57,19 +57,12 @@ const BusinessBillingPage = (props: Props) => {
   const zipMaskRef = useMask({ mask: '_____', replacement: { _: /\d/ } });
 
   useEffect(() => {
-    if (quote) {
-      const policy = getPolicyFromQuote(quote);
-      dispatch(changeCoveragePolicy(policy));
-      if (
-        quote.insured &&
-        isEqual(businessInformation, initBusinessInfoState)
-      ) {
-        const businessInfo = getBusinessInfoFromQuote(quote);
-        dispatch(setBusinessInformation(businessInfo));
-      } else if (isEqual(businessAddress, initAddressState)) {
-        const address = getAddressFromQuote(quote);
-        dispatch(setBusinessBillingAddress(address));
-      }
+    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
+      const businessInfo = getBusinessInfoFromQuote(quote);
+      dispatch(setBusinessInformation(businessInfo));
+    } else if (quote && isEqual(businessAddress, initAddressState)) {
+      const address = getAddressFromQuote(quote);
+      dispatch(setBusinessBillingAddress(address));
     }
   }, [quote, businessInformation, businessAddress, dispatch]);
 

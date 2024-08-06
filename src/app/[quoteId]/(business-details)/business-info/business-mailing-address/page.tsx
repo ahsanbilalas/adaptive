@@ -5,6 +5,8 @@ import { useFormik } from 'formik';
 import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useQuote } from '@/hooks/useQuote';
+import { IAddress } from '@/store/api/types';
 import {
   initAddressState,
   initBusinessInfoState,
@@ -24,8 +26,6 @@ import { businessAddressSchema } from '@/validations/quoteValidations';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
-import { IAddress } from '@/store/api/types';
-import { useQuote } from '@/hooks/useQuote';
 import LoadingBar from 'react-top-loading-bar';
 
 type Props = {};
@@ -57,19 +57,12 @@ const BusinessMailingPage = (props: Props) => {
   const zipMaskRef = useMask({ mask: '_____', replacement: { _: /\d/ } });
 
   useEffect(() => {
-    if (quote) {
-      const policy = getPolicyFromQuote(quote);
-      dispatch(changeCoveragePolicy(policy));
-      if (
-        quote.insured &&
-        isEqual(businessInformation, initBusinessInfoState)
-      ) {
-        const businessInfo = getBusinessInfoFromQuote(quote);
-        dispatch(setBusinessInformation(businessInfo));
-      } else if (isEqual(businessAddress, initAddressState)) {
-        const address = getAddressFromQuote(quote);
-        dispatch(setBusinessMailingAddress(address));
-      }
+    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
+      const businessInfo = getBusinessInfoFromQuote(quote);
+      dispatch(setBusinessInformation(businessInfo));
+    } else if (quote && isEqual(businessAddress, initAddressState)) {
+      const address = getAddressFromQuote(quote);
+      dispatch(setBusinessMailingAddress(address));
     }
   }, [quote, businessInformation, businessAddress, dispatch]);
 

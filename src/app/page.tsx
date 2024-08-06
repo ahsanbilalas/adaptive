@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { notFound, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useFormik } from 'formik';
 import { map } from 'lodash';
 import toast from 'react-hot-toast';
@@ -8,10 +9,6 @@ import { useAppDispatch } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
 import { useAutocompleteQuery } from '@/store/api/baseApi';
 import { IAddress, Step } from '@/store/api/types';
-import {
-  changeCoveragePolicy,
-  initPolicyState,
-} from '@/store/feature/policy-coverage';
 import {
   initAddressState,
   initBusinessInfoState,
@@ -29,7 +26,6 @@ import {
   Wrapper,
 } from '@/components/get-quote/style';
 import { ErrorMessageText } from '@/components/common/style';
-import Image from 'next/image';
 import Button from '@/elements/buttons/Button';
 import FormikInputField from '@/components/common/FormikInputField';
 import LoadingBar from 'react-top-loading-bar';
@@ -41,7 +37,6 @@ export default function Home() {
   const { handleQuoteMutation, loadingRef, createQuoteResult } = useQuote();
 
   const [address, setAddress] = useState<IAddress>(initAddressState);
-  const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
   const [inputError, setInputError] = useState<string | undefined>();
 
   const formik = useFormik({
@@ -50,7 +45,6 @@ export default function Home() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await handleQuoteMutation(Step.address, address);
-        dispatch(changeCoveragePolicy(initPolicyState));
         dispatch(setBusinessInformation(initBusinessInfoState));
         router.push(`${res.id}/policy-selection`);
       } catch (error: any) {
@@ -78,8 +72,6 @@ export default function Home() {
   );
 
   useEffect(() => {
-    !isFetching && setAutocompleteOptions(options);
-
     if (data?.suggestions.length === 1) {
       let addr = data?.suggestions[0];
       setAddress({
@@ -92,7 +84,7 @@ export default function Home() {
     } else {
       setAddress(initAddressState);
     }
-  }, [data, options, isFetching]);
+  }, [data]);
 
   useEffect(() => {
     // SmartyStreets api error handling
@@ -128,14 +120,14 @@ export default function Home() {
               handleChange={formik.handleChange}
               handleBlur={formik.handleBlur}
             />
-            {inputError && autocompleteOptions.length === 0 && (
+            {inputError && options.length === 0 && (
               <ErrorMessageText className="p-1">{inputError}</ErrorMessageText>
             )}
-            {autocompleteOptions.length > 0 &&
-              autocompleteOptions[0] !== formik.values.address &&
+            {options.length > 0 &&
+              options[0] !== formik.values.address &&
               formik.values.address !== '' && (
                 <AutocompleteItems>
-                  {map(autocompleteOptions, (item: string, index: number) => (
+                  {map(options, (item: string, index: number) => (
                     <AutocompleteOptions
                       key={index}
                       onClick={() => formik.setFieldValue('address', item)}

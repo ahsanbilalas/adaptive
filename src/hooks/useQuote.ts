@@ -65,11 +65,11 @@ export const useQuote = () => {
       const page = pathname.split('/').at(-1) || '';
       if (
         !completed.coverage &&
-        ['business-details', 'review-quote'].includes(page)
+        ['business-entity-details', 'review-quote'].includes(page)
       ) {
         router.push(`/${quoteId}/policy-selection`);
       } else if (!completed.businessInformation && page === 'review-quote') {
-        router.push(`/${quoteId}/business-info/business-details`);
+        router.push(`/${quoteId}/business-info/business-entity-details`);
       }
     }
   }, [

@@ -6,10 +6,8 @@ import { FormikHelpers, useFormik } from 'formik';
 import { find } from 'lodash';
 import toast from 'react-hot-toast';
 import { policySelectionSchema } from '@/validations/quoteValidations';
-import { useAppDispatch } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
 import { ICoverage, IQuoteEstimate, Step } from '@/store/api/types';
-import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import {
   getAddressFromQuote,
   getCoverageFromQuote,
@@ -21,7 +19,6 @@ import LoadingBar from 'react-top-loading-bar';
 
 const PolicySelectionPage = () => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
   const { quote, quoteQueryResult, loadingRef, handleQuoteMutation } =
     useQuote();
@@ -93,22 +90,11 @@ const PolicySelectionPage = () => {
         ...values,
         effectiveDate: moment(values.effectiveDate).format('MM/DD/YYYY'),
       });
-
-      dispatch(
-        changeCoveragePolicy({
-          amount: values.coverageAmount,
-          effectiveDateUtc: new Date(values.effectiveDate).toISOString(),
-          selectedEstimateId: values.estimateId,
-          quoteEstimates: quote?.data.quoteEstimates || [],
-        })
-      );
       router.push(`business-info/business-entity-details`);
     } catch (error: any) {
-      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
+      if (error?.status === 400 && Array.isArray(error?.data?.message))
         error?.data?.message.forEach((err: string) => toast.error(err));
-      } else {
-        toast.error('Something went wrong. Try again.');
-      }
+      else toast.error('Something went wrong. Try again.');
     } finally {
       setSubmitting(false);
     }

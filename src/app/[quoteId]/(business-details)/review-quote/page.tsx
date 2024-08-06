@@ -31,7 +31,6 @@ const ReviewPage = (props: Props) => {
 
   const address = getAddressFromQuote(quote);
   const businessInformation = getBusinessInfoFromQuote(quote);
-  const policy = useMemo(() => getPolicyFromQuote(quote), [quote]);
 
   useEffect(() => {
     const completeQuoteCheckout = async () => {
@@ -46,10 +45,6 @@ const ReviewPage = (props: Props) => {
 
     completeQuoteCheckout();
   }, [handleQuoteMutation]);
-
-  useEffect(() => {
-    dispatch(changeCoveragePolicy(policy));
-  }, [policy, dispatch]);
 
   return (
     <div className="flex flex-col gap-5">

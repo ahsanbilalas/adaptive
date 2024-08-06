@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFormik } from 'formik';
+import { FormikHandlers, FormikHelpers, useFormik } from 'formik';
 import { isEqual } from 'lodash';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
@@ -55,35 +55,34 @@ const BusinessRevenuePage = (props: Props) => {
     enableReinitialize: true,
     initialValues: businessRevenue,
     validationSchema: businessRevenueSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        dispatch(setBusinessRevenue(values));
-        const payload = { ...businessInformation, ...values };
-        if (!isEqual(businessInfoFromQuote, payload))
-          await handleQuoteMutation(Step.businessInformation, payload);
-        router.push(`/${quoteId}/review-quote`);
-      } catch (error: any) {
-        if (error?.status === 400 && Array.isArray(error?.data?.message)) {
-          error?.data?.message.map((err: string) => toast.error(err));
-        } else toast.error('Something went wrong. Try again.');
-      } finally {
-        setSubmitting(false);
-      }
-    },
+    onSubmit,
   });
 
   useEffect(() => {
-    if (quote) {
-      const policy = getPolicyFromQuote(quote);
-      dispatch(changeCoveragePolicy(policy));
-      if (
-        quote.insured &&
-        isEqual(businessInformation, initBusinessInfoState)
-      ) {
-        dispatch(setBusinessInformation(businessInfoFromQuote));
-      }
+    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
+      const businessInfo = getBusinessInfoFromQuote(quote);
+      dispatch(setBusinessInformation(businessInfo));
     }
   }, [quote, businessInformation, businessInfoFromQuote, dispatch]);
+
+  async function onSubmit(
+    values: IBusinessRevenue,
+    { setSubmitting }: FormikHelpers<IBusinessRevenue>
+  ) {
+    try {
+      dispatch(setBusinessRevenue(values));
+      const payload = { ...businessInformation, ...values };
+      if (!isEqual(businessInfoFromQuote, payload))
+        await handleQuoteMutation(Step.businessInformation, payload);
+      router.push(`/${quoteId}/review-quote`);
+    } catch (error: any) {
+      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
+        error?.data?.message.map((err: string) => toast.error(err));
+      } else toast.error('Something went wrong. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const getFieldAttrs = (
     fieldName: keyof IBusinessRevenue,

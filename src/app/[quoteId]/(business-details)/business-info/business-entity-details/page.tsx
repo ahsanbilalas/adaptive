@@ -1,8 +1,8 @@
 'use client';
-import React, { useEffect,  } from 'react';
-import {  useRouter,  } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFormik } from 'formik';
-import {  isEqual } from 'lodash';
+import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
@@ -58,17 +58,13 @@ const BusinessEntityPage = (props: Props) => {
   });
 
   useEffect(() => {
-    if (quote) {
-      const policy = getPolicyFromQuote(quote);
-      dispatch(changeCoveragePolicy(policy));
       if (
-        quote.insured &&
+        quote?.insured &&
         isEqual(businessInformation, initBusinessInfoState)
       ) {
         const businessInfo = getBusinessInfoFromQuote(quote);
         dispatch(setBusinessInformation(businessInfo));
       }
-    }
   }, [quote, businessInformation, dispatch]);
 
   const getFieldAttrs = (
