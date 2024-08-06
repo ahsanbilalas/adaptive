@@ -17,10 +17,8 @@ import {
 import {
   getAddressFromQuote,
   getBusinessInfoFromQuote,
-  getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
 import { IAddress } from '@/store/api/types';
-import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import { businessAddressConfig } from '@/config/businessAddressConfig';
 import { businessAddressSchema } from '@/validations/quoteValidations';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';

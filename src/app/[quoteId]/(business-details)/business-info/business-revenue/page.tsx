@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { FormikHandlers, FormikHelpers, useFormik } from 'formik';
+import { FormikHelpers, useFormik } from 'formik';
 import { isEqual } from 'lodash';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
@@ -15,11 +15,7 @@ import {
   setBusinessInformation,
   setBusinessRevenue,
 } from '@/store/feature/business-info';
-import {
-  getBusinessInfoFromQuote,
-  getPolicyFromQuote,
-} from '@/utils/adaptiveApiUtils';
-import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
+import { getBusinessInfoFromQuote } from '@/utils/adaptiveApiUtils';
 import { IBusinessInformation, Step } from '@/store/api/types';
 import { businessRevenueSchema } from '@/validations/quoteValidations';
 import { businessRevenueConfig } from '@/config/businessRevenueConfig';

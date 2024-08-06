@@ -13,12 +13,8 @@ import {
   setBusinessDetails,
   setBusinessInformation,
 } from '@/store/feature/business-info';
-import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import { IBusinessDetails } from '@/store/feature/business-info/types';
-import {
-  getBusinessInfoFromQuote,
-  getPolicyFromQuote,
-} from '@/utils/adaptiveApiUtils';
+import { getBusinessInfoFromQuote } from '@/utils/adaptiveApiUtils';
 import { businessDetailsSchema } from '@/validations/quoteValidations';
 import { businessDetailsConfig } from '@/config/businessDetailsConfig';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
@@ -56,13 +52,10 @@ const BusinessEntityPage = () => {
   });
 
   useEffect(() => {
-      if (
-        quote?.insured &&
-        isEqual(businessInformation, initBusinessInfoState)
-      ) {
-        const businessInfo = getBusinessInfoFromQuote(quote);
-        dispatch(setBusinessInformation(businessInfo));
-      }
+    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
+      const businessInfo = getBusinessInfoFromQuote(quote);
+      dispatch(setBusinessInformation(businessInfo));
+    }
   }, [quote, businessInformation, dispatch]);
 
   const getFieldAttrs = (

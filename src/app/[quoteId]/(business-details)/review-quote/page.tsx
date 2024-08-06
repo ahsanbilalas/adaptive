@@ -1,8 +1,7 @@
 'use client';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
-import { changeCoveragePolicy } from '@/store/feature/policy-coverage';
 import { useAppDispatch } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
 import { Step } from '@/store/api/types';
@@ -10,7 +9,6 @@ import { currencyFormat, getCompleteAddress } from '@/utils/quoteUtils';
 import {
   getAddressFromQuote,
   getBusinessInfoFromQuote,
-  getPolicyFromQuote,
 } from '@/utils/adaptiveApiUtils';
 import { Title } from '@/components/business-info/style';
 import BottomNavBar from '@/components/common/BottomNavBar';
