@@ -30,7 +30,7 @@ const PolicySelectionPage = () => {
     const coverageFromQuote = getCoverageFromQuote(quote);
     return {
       ...coverageFromQuote,
-      effectiveDate: moment(coverageFromQuote.effectiveDate).format(
+      effectiveDate: moment(coverageFromQuote.effectiveDate, 'MM/DD/YY').format(
         'YYYY-MM-DD'
       ),
     };
