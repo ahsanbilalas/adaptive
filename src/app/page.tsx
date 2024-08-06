@@ -5,9 +5,9 @@ import { useFormik } from 'formik';
 import { map } from 'lodash';
 import toast from 'react-hot-toast';
 import { useAppDispatch } from '@/store/hooks';
+import { useQuote } from '@/hooks/useQuote';
 import { useAutocompleteQuery } from '@/store/api/baseApi';
-import { useCreateQuoteMutation } from '@/store/api/adaptiveApiSlice';
-import { IAddress, ICreateQuoteParams, Step } from '@/store/api/types';
+import { IAddress, Step } from '@/store/api/types';
 import {
   changeCoveragePolicy,
   initPolicyState,
@@ -32,40 +32,28 @@ import { ErrorMessageText } from '@/components/common/style';
 import Image from 'next/image';
 import Button from '@/elements/buttons/Button';
 import FormikInputField from '@/components/common/FormikInputField';
-import Loader from '@/components/common/Loader';
+import LoadingBar from 'react-top-loading-bar';
 
 export default function Home() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const [createQuote, _] = useCreateQuoteMutation();
+  const { handleQuoteMutation, loadingRef, createQuoteResult } = useQuote();
 
   const [address, setAddress] = useState<IAddress>(initAddressState);
   const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
   const [inputError, setInputError] = useState<string | undefined>();
-  const [apiLoading, setApiLoading] = useState(false);
-
-  const createQuoteParams: ICreateQuoteParams = useMemo(
-    () => ({
-      address,
-      step: Step.address,
-      product: 'Outage',
-    }),
-    [address]
-  );
 
   const formik = useFormik({
     initialValues: getQuoteConfig.initialValues,
     validationSchema: getQuoteSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        setApiLoading(true);
-        const res = await createQuote(createQuoteParams).unwrap();
+        const res = await handleQuoteMutation(Step.address, address);
         dispatch(changeCoveragePolicy(initPolicyState));
         dispatch(setBusinessInformation(initBusinessInfoState));
         router.push(`${res.id}/policy-selection`);
       } catch (error: any) {
-        setApiLoading(false);
         setSubmitting(false);
         if (error?.status === 400) {
           toast.error('Please provide a valid address');
@@ -84,7 +72,7 @@ export default function Home() {
       map(
         data?.suggestions,
         (item: any) =>
-          `${item.street_line}, ${item.city}, ${item.state}, ${item.zipcode}`
+          `${item.street_line}, ${item.secondary === '' ? '' : `${item.secondary}, `}${item.city}, ${item.state}, ${item.zipcode}`
       ),
     [data]
   );
@@ -116,7 +104,7 @@ export default function Home() {
 
   return (
     <PageWrapper>
-      {apiLoading && <Loader />}
+      <LoadingBar ref={loadingRef} />
       <Wrapper>
         <LogoContainer>
           <Image
@@ -132,12 +120,13 @@ export default function Home() {
         <InputFormContainer onSubmit={formik.handleSubmit} autoComplete="off">
           <AutocompleteContainer>
             <FormikInputField
+              name="address"
+              placeholder="Enter Address"
               value={formik.values.address}
               error={formik.errors.address}
               touched={formik.touched.address}
               handleChange={formik.handleChange}
               handleBlur={formik.handleBlur}
-              {...getQuoteConfig.inputs.address}
             />
             {inputError && autocompleteOptions.length === 0 && (
               <ErrorMessageText className="p-1">{inputError}</ErrorMessageText>
@@ -161,7 +150,7 @@ export default function Home() {
             className="w-full text-sm md:w-2/5"
             type="submit"
             disabled={
-              apiLoading ||
+              createQuoteResult.isLoading ||
               isFetching ||
               formik.isSubmitting ||
               address === initAddressState

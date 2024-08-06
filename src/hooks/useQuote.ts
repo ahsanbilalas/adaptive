@@ -11,22 +11,25 @@ import { isEmpty } from 'lodash';
 export const useQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const pathname = usePathname();
-  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId);
-  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
   const loadingRef = useRef<LoadingBarRef>(null);
   const router = useRouter();
+  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
+  const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId, {
+    skip: !quoteId,
+  });
 
   const handleQuoteMutation = useCallback(
     async (step: Step, payload: any) => {
       try {
         loadingRef.current?.continuousStart();
-        await createQuote({
+        const res = await createQuote({
           quoteId,
           step,
           product: 'Outage',
           [step]: payload,
         }).unwrap();
         loadingRef.current?.complete();
+        return res;
       } catch (error: any) {
         loadingRef.current?.complete();
         throw error;
@@ -36,15 +39,16 @@ export const useQuote = () => {
   );
 
   useEffect(() => {
-    if (quoteQueryResult.isLoading) loadingRef.current?.continuousStart();
-    else loadingRef.current?.complete();
-  }, [quoteQueryResult.isLoading]);
+    if (quoteId && quoteQueryResult.isLoading)
+      loadingRef.current?.continuousStart();
+    else if (quoteId) loadingRef.current?.complete();
+  }, [quoteId, quoteQueryResult.isLoading]);
 
   // Quotes query error handling
   useEffect(() => {
     if (
       quoteQueryResult.isError ||
-      (!quoteQueryResult.isFetching && isEmpty(quote))
+      (!quoteQueryResult.isLoading && isEmpty(quote) && quoteId)
     ) {
       if (
         isEmpty(quote) ||
@@ -72,6 +76,7 @@ export const useQuote = () => {
     quoteId,
     quote,
     quoteQueryResult.isError,
+    quoteQueryResult.isLoading,
     quoteQueryResult.isFetching,
     quoteQueryResult.error,
     router,
