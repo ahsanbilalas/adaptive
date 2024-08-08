@@ -1,44 +1,44 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import moment from 'moment';
-import { FormikHelpers, useFormik } from 'formik';
+import { FormikHelpers, FormikValues } from 'formik';
 import { find } from 'lodash';
 import toast from 'react-hot-toast';
+import LoadingBar from 'react-top-loading-bar';
 import { policySelectionSchema } from '@/validations/quoteValidations';
 import { useQuote } from '@/hooks/useQuote';
+import { useQuoteForms } from '@/hooks/useQuoteForms';
 import { ICoverage, IQuoteEstimate, Step } from '@/store/api/types';
-import {
-  getAddressFromQuote,
-  getCoverageFromQuote,
-} from '@/utils/adaptiveApiUtils';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import InstructionModal from '@/components/policy-coverage/InstructionModal';
 import PolicyCoverageUI from '@/components/policy-coverage/PolicyCoverageUI';
-import LoadingBar from 'react-top-loading-bar';
 
 const PolicySelectionPage = () => {
-  const router = useRouter();
-
-  const { quote, quoteQueryResult, loadingRef, handleQuoteMutation } =
-    useQuote();
-
   const [isModelHidden, setIsModelHidden] = useState(true);
 
-  const address = getAddressFromQuote(quote);
-  const coverage: ICoverage = useMemo(() => {
-    const coverageFromQuote = getCoverageFromQuote(quote);
+  const {
+    quote,
+    address,
+    coverage,
+    quoteQueryResult,
+    loadingRef,
+    handleQuoteMutation,
+    router,
+  } = useQuote();
+
+  const initialValues: ICoverage = useMemo(() => {
     return {
-      ...coverageFromQuote,
-      effectiveDate: moment(coverageFromQuote.effectiveDate, 'MM/DD/YY').format(
+      ...coverage,
+      effectiveDate: moment(coverage.effectiveDate, 'MM/DD/YY').format(
         'YYYY-MM-DD'
       ),
     };
-  }, [quote]);
+  }, [coverage]);
 
-  const formik = useFormik({
+  const { formik, getFieldAttrs } = useQuoteForms({
+    skipQuery: true,
     enableReinitialize: true,
-    initialValues: coverage,
+    initialValues,
     validationSchema: policySelectionSchema,
     onSubmit,
   });
@@ -48,42 +48,45 @@ const PolicySelectionPage = () => {
       find(quote?.data.quoteEstimates, {
         productId: formik.values.estimateId,
       }),
-    [quote, formik.values.estimateId]
+    [quote?.data.quoteEstimates, formik.values.estimateId]
   );
 
-  const updatePolicy = useCallback(async () => {
-    try {
-      await handleQuoteMutation(Step.coverage, {
-        ...formik.values,
-        effectiveDate: moment(formik.values.effectiveDate).format('MM/DD/YYYY'),
-      });
-    } catch (error: any) {
-      if (error?.status === 400 && Array.isArray(error?.data?.message)) {
-        error?.data?.message.forEach((err: string) => toast.error(err));
-      } else {
-        toast.error('Something went wrong. Try again.');
+  const updatePolicy = useCallback(
+    async (values: FormikValues) => {
+      try {
+        await handleQuoteMutation(Step.coverage, {
+          ...values,
+          effectiveDate: moment(values.effectiveDate).format('MM/DD/YYYY'),
+        });
+      } catch (error: any) {
+        if (error?.status === 400 && Array.isArray(error?.data?.message)) {
+          error?.data?.message.forEach((err: string) => toast.error(err));
+        } else {
+          toast.error('Something went wrong. Try again.');
+        }
       }
-    }
-  }, [formik.values, handleQuoteMutation]);
+    },
+    [handleQuoteMutation]
+  );
 
   useEffect(() => {
     if (quote && !quote.data.quoteEstimates) {
-      updatePolicy();
+      updatePolicy(coverage);
     }
-  }, [quote, updatePolicy]);
+  }, [quote, coverage, updatePolicy]);
 
   useEffect(() => {
     if (
-      formik.initialValues === coverage &&
-      formik.values.coverageAmount !== coverage.coverageAmount
+      formik.initialValues === initialValues &&
+      formik.values.coverageAmount !== initialValues.coverageAmount
     ) {
-      updatePolicy();
+      updatePolicy(formik.values);
     }
-  }, [formik.initialValues, formik.values, coverage, updatePolicy]);
+  }, [formik.initialValues, formik.values, initialValues, updatePolicy]);
 
   async function onSubmit(
-    values: ICoverage,
-    { setSubmitting }: FormikHelpers<ICoverage>
+    values: FormikValues,
+    { setSubmitting }: FormikHelpers<FormikValues>
   ) {
     try {
       await handleQuoteMutation(Step.coverage, {
@@ -106,12 +109,15 @@ const PolicySelectionPage = () => {
       <form onSubmit={formik.handleSubmit}>
         <PolicyCoverageUI
           address={address}
-          formik={formik}
+          values={formik.values}
+          setFieldValue={formik.setFieldValue}
+          getFieldAttrs={getFieldAttrs}
           onShowModal={() => setIsModelHidden(false)}
           quoteEstimates={quote?.data.quoteEstimates as IQuoteEstimate[]}
           selectedEstimate={selectedEstimate as IQuoteEstimate}
         />
         <BottomNavBar
+          selectedId={formik.values.estimateId}
           buttonLabel="Next: Business Information"
           disabled={quoteQueryResult.isFetching || formik.isSubmitting}
         />

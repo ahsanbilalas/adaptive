@@ -1,10 +1,10 @@
-import React from "react";
-import { map } from "lodash";
+import React from 'react';
+import { map } from 'lodash';
 import {
   CoverageCardContainer,
   CoverageLimitCard,
-} from "@/components/policy-coverage/style";
-import { currencyFormat } from "@/utils/quoteUtils";
+} from '@/components/policy-coverage/style';
+import { currencyFormat } from '@/utils/quoteUtils';
 
 type Props = {
   selectedDuration: number;
@@ -16,12 +16,12 @@ type Props = {
 const CoverageLimit = (props: Props) => {
   return (
     <>
-      <p className="text-5xl text-center md:text-left">
-        Now, select your coverage limit
+      <p className="text-center text-5xl md:text-left">
+        Choose your coverage limit
       </p>
       <p className="my-6 text-center md:text-left">
-        Should your business lose power for {props.selectedDuration} hours, how
-        much would you need to cover operations?
+        If your business were to lose power for {props.selectedDuration} hours,
+        how much coverage would you need to maintain operations?
       </p>
 
       <CoverageCardContainer>

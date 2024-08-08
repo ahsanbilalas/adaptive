@@ -1,29 +1,30 @@
-"use client";
-import React from "react";
-import { useRouter } from "next/navigation";
-import { find, round } from "lodash";
-import { selectPolicyCoverage } from "@/store/feature/policy-coverage";
-import { useAppSelector } from "@/store/hooks";
+'use client';
+import React from 'react';
+import { find } from 'lodash';
+import { useQuote } from '@/hooks/useQuote';
+import { currencyFormat } from '@/utils/quoteUtils';
 import {
   BackIconContainer,
   QuoteContainer,
   BottomNavbarContainer,
-} from "./style";
-import Button from "@/elements/buttons/Button";
-import LeftArrowIcon from "@/elements/icons/LeftArrowIcon";
+} from './style';
+import Button from '@/elements/buttons/Button';
+import LeftArrowIcon from '@/elements/icons/LeftArrowIcon';
 
 type Props = {
   buttonLabel: string;
+  selectedId?: any;
   onButtonClick?: () => void;
   disabled?: boolean;
 };
 
 const BottomNavBar = (props: Props) => {
-  const router = useRouter();
-
-  const policy = useAppSelector(selectPolicyCoverage);
+  const { router, policy } = useQuote();
+  let productId = props.selectedId
+    ? props.selectedId
+    : policy.selectedEstimateId;
   const selectedEstimate = find(policy.quoteEstimates, {
-    productId: policy.selectedEstimateId,
+    productId: productId,
   });
   const premium = selectedEstimate?.premiumAmount
     ? selectedEstimate.premiumAmount
@@ -38,7 +39,7 @@ const BottomNavBar = (props: Props) => {
 
       <QuoteContainer>
         <p className="text-sm font-bold uppercase">Your quote</p>
-        <p className="text-lg">${round(premium, 2)}/mo</p>
+        <p className="text-lg">{currencyFormat(premium)}/mo</p>
       </QuoteContainer>
 
       <Button

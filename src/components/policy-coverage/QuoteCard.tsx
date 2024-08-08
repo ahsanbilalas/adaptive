@@ -40,14 +40,16 @@ const QuoteCard = (props: Props) => {
   return (
     <QuoteWrapper>
       <QuoteContainer>
-        <div className="mr-auto md:mr-0">
-          <p className="font-bold uppercase md:text-center">Your quote</p>
-          <p className="mt-4 text-xl md:text-center">Adaptive Power</p>
-          <p className="text-xl md:text-center">Outage Coverage</p>
+        <div>
+          <p className="text-center font-bold uppercase">Your quote</p>
+          <p className="mt-4 text-center text-xl">Adaptive Power</p>
+          <p className="text-center text-xl">Outage Coverage</p>
         </div>
 
         <div>
-          <p className="mt-3 text-5xl font-bold">{currencyFormat(premium)}</p>
+          <p className="mt-7 text-4xl font-bold md:mt-3 md:text-5xl">
+            {currencyFormat(premium)}
+          </p>
         </div>
       </QuoteContainer>
 

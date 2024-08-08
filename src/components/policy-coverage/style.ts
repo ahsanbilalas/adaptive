@@ -10,10 +10,10 @@ export const CoverageLimitCard = styled.div.attrs<{
   $limit: number;
 }>((props) => ({
   className:
-    'border rounded-lg flex flex-col justify-center items-center p-9 w-40 md:w-36 lg:w-48 cursor-pointer ' +
+    'bg-card rounded-lg flex flex-col justify-center items-center p-9 w-full md:w-36 lg:w-48 cursor-pointer ' +
     (props.$selectedLimit === props.$limit
-      ? 'bg-white border-deep-blue shadow-xl'
-      : 'border-gray text-gray'),
+      ? 'border border-card border-primary-light shadow-xl'
+      : ''),
 }))``;
 
 export const Title = styled.p.attrs({
@@ -25,10 +25,10 @@ export const HoursCard = styled.div.attrs<{
   $id: string;
 }>((props) => ({
   className:
-    'border rounded-lg flex flex-col items-center w-full md:size-36 lg:size-48 p-4 cursor-pointer ' +
+    'bg-card rounded-lg flex flex-col w-full p-4 md:p-8 cursor-pointer ' +
     (props.$selectedId === props.$id
-      ? 'bg-white border-deep-blue shadow-xl'
-      : 'border-gray text-gray'),
+      ? 'border border-card border-primary-light shadow-xl'
+      : ''),
 }))``;
 
 export const ModalContainer = styled.div.attrs({
@@ -50,9 +50,9 @@ export const QuoteCardWrapper = styled.div.attrs({
 
 export const QuoteWrapper = styled.div.attrs({
   className:
-    'md:w-80 lg:w-96 bg-white rounded-lg shadow-2xl py-10 px-8 flex-col items-center',
+    'md:w-80 lg:w-96 bg-card rounded-lg shadow-2xl py-10 px-8 flex-col items-center',
 })``;
 
 export const QuoteContainer = styled.div.attrs({
-  className: 'flex md:flex-col md:items-center mb-12 md:mb-0',
+  className: 'flex flex-col items-center mb-12 md:mb-0',
 })``;

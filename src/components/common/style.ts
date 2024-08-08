@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const BottomNavbarContainer = styled.div.attrs({
   className:
-    'flex w-full py-6 px-9 rounded-t-lg md:rounded-none flex items-center bg-white fixed bottom-0 left-0 z-30',
+    'flex w-full py-6 px-9 rounded-t-lg md:rounded-none flex items-center bg-white fixed bottom-0 left-0 z-30 shadow-top',
 })``;
 
 export const QuoteContainer = styled.div.attrs({

@@ -1,5 +1,5 @@
 import React, { ChangeEvent } from 'react';
-import { IAddress, IQuoteEstimate } from '@/store/api/types';
+import { IAddress, ICoverage, IQuoteEstimate } from '@/store/api/types';
 import { policyCoverageConfig } from '@/config/policyCoverageConfig';
 import {
   PageWrapper,
@@ -10,11 +10,14 @@ import QuoteCard from './QuoteCard';
 import HourCoverage from '@/components/policy-coverage/HourCoverage';
 import CoverageLimit from '@/components/policy-coverage/CoverageLimit';
 import FormikInputField from '@/components/common/FormikInputField';
+import { FormikValues } from 'formik';
 
 type Props = {
   onShowModal: () => void;
   address: IAddress;
-  formik: any;
+  values: FormikValues;
+  setFieldValue: any;
+  getFieldAttrs: (fieldName: string | number, extraAttrs?: any) => any;
   selectedEstimate: IQuoteEstimate;
   quoteEstimates: IQuoteEstimate[];
 };
@@ -22,7 +25,9 @@ type Props = {
 const PolicyCoverageUI = ({
   onShowModal,
   address,
-  formik,
+  values,
+  setFieldValue,
+  getFieldAttrs,
   selectedEstimate,
   quoteEstimates,
 }: Props) => {
@@ -33,36 +38,32 @@ const PolicyCoverageUI = ({
           <div className="md:hidden">
             <QuoteCard
               selectedEstimate={selectedEstimate}
-              effectiveDateUtc={new Date(
-                formik.values.effectiveDate
-              ).toISOString()}
+              effectiveDateUtc={new Date(values.effectiveDate).toISOString()}
             />
             <HorizontalLine className="my-16" />
           </div>
           <HourCoverage
             address={address}
             coverageQuotes={quoteEstimates}
-            selectedQuoteId={formik.values.estimateId}
+            selectedQuoteId={values.estimateId}
             onPolicyQuoteChange={(value: string) =>
-              formik.setFieldValue('estimateId', value)
+              setFieldValue('estimateId', value)
             }
           />
           <CoverageLimit
             selectedDuration={selectedEstimate?.duration || 16}
-            selectedLimit={formik.values.coverageAmount}
+            selectedLimit={values.coverageAmount}
             coverageLimitOpts={policyCoverageConfig.coverageLimitOpts}
             onPolicyLimitChange={(value: number) =>
-              formik.setFieldValue('coverageAmount', value)
+              setFieldValue('coverageAmount', value)
             }
           />
           <FormikInputField
-            type="date"
-            name="effectiveDate"
-            value={formik.values.effectiveDate}
-            error={formik.errors.effectiveDate}
-            touched={formik.touched.effectiveDate}
-            handleBlur={formik.handleBlur}
-            handleChange={formik.handleChange}
+            {...getFieldAttrs('effectiveDate', {
+              type: 'date',
+              name: 'effectiveDate',
+              label: 'Effective Date',
+            })}
           />
           <div>
             <p
@@ -77,9 +78,7 @@ const PolicyCoverageUI = ({
           <div className="fixed right-10">
             <QuoteCard
               selectedEstimate={selectedEstimate}
-              effectiveDateUtc={new Date(
-                formik.values.effectiveDate
-              ).toISOString()}
+              effectiveDateUtc={new Date(values.effectiveDate).toISOString()}
             />
           </div>
         </QuoteCardWrapper>

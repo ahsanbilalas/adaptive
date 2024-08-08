@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
-import { useAppDispatch } from '@/store/hooks';
 import { useQuote } from '@/hooks/useQuote';
 import { Step } from '@/store/api/types';
 import { currencyFormat, getCompleteAddress } from '@/utils/quoteUtils';
@@ -17,16 +16,13 @@ import DisabledInputField from '@/components/common/DisabledInputField';
 const ReviewPage = () => {
   const {
     quote,
+    address,
+    businessInformation,
     quoteQueryResult,
     createQuoteResult,
     loadingRef,
     handleQuoteMutation,
   } = useQuote();
-
-  const dispatch = useAppDispatch();
-
-  const address = getAddressFromQuote(quote);
-  const businessInformation = getBusinessInfoFromQuote(quote);
 
   useEffect(() => {
     const completeQuoteCheckout = async () => {

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { DM_Sans } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
-import Navbar from '@/components/common/Navbar';
 import StoreProvider from '@/app/StoreProvider';
+import { ThemeProvider } from 'styled-components';
+import { theme } from '@/config/themeConfig';
 
 const dm_sans = DM_Sans({ subsets: ['latin'] });
 
@@ -20,12 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={dm_sans.className + 'box-border h-screen w-screen'}>
-        <Navbar />
-        <div className="h-full w-full overflow-auto bg-anti-white pt-20">
+        <div className="bg-background h-full w-full overflow-auto">
           <Toaster
             position="top-center"
             gutter={8}
-            containerStyle={{ top: '6rem' }}
             toastOptions={{ className: 'w-96' }}
           />
           <StoreProvider>{children}</StoreProvider>

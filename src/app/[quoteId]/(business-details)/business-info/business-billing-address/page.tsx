@@ -25,26 +25,27 @@ import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoF
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import LoadingBar from 'react-top-loading-bar';
+import { useQuoteForms } from '@/hooks/useQuoteForms';
 
 const BusinessBillingPage = () => {
   const router = useRouter();
-
-  const {
-    quote,
-    quoteQueryResult: { isLoading },
-    loadingRef,
-  } = useQuote();
-
   const dispatch = useAppDispatch();
   const businessInformation = useAppSelector(selectBusinessInformation);
   const businessAddress = useAppSelector(selectBusinessBillingAddress);
 
-  const formik = useFormik({
+  const {
+    formik: { handleSubmit, isSubmitting },
+    quote,
+    loadingRef,
+    quoteQueryResult: { isLoading },
+    getFieldAttrs,
+  } = useQuoteForms({
+    config: businessAddressConfig.inputs,
     enableReinitialize: true,
     initialValues: businessAddress,
     validationSchema: businessAddressSchema,
     onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessBillingAddress(values));
+      dispatch(setBusinessBillingAddress(values as IAddress));
       setSubmitting(false);
       router.push(`business-revenue`);
     },
@@ -62,20 +63,10 @@ const BusinessBillingPage = () => {
     }
   }, [quote, businessInformation, businessAddress, dispatch]);
 
-  const getFieldAttrs = (fieldName: keyof IAddress, extraAttrs: any = {}) => ({
-    ...extraAttrs,
-    ...businessAddressConfig.inputs[fieldName],
-    value: formik.values[fieldName],
-    error: formik.errors[fieldName],
-    touched: formik.touched[fieldName],
-    handleChange: formik.handleChange,
-    handleBlur: formik.handleBlur,
-  });
-
   return (
     <BusinessInfoFormsContainer title="Enter your business billing address">
       <LoadingBar ref={loadingRef} />
-      <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <FormikInputField {...getFieldAttrs('street')} />
         <FormikInputField {...getFieldAttrs('street2')} />
         <FormikInputField {...getFieldAttrs('city')} />
@@ -87,7 +78,7 @@ const BusinessBillingPage = () => {
         />
         <BottomNavBar
           buttonLabel="Next: Business Revenue Range"
-          disabled={formik.isSubmitting || isLoading}
+          disabled={isSubmitting || isLoading}
         />
       </form>
     </BusinessInfoFormsContainer>
