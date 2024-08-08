@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { notFound, useParams, usePathname, useRouter } from 'next/navigation';
 import { LoadingBarRef } from 'react-top-loading-bar';
 import {
@@ -7,16 +7,34 @@ import {
 } from '@/store/api/adaptiveApiSlice';
 import { Step } from '@/store/api/types';
 import { isEmpty } from 'lodash';
+import {
+  getAddressFromQuote,
+  getBusinessInfoFromQuote,
+  getCoverageFromQuote,
+  getPolicyFromQuote,
+} from '@/utils/adaptiveApiUtils';
 
-export const useQuote = () => {
-  const { quoteId } = useParams<{ quoteId: string }>();
+type Props = {
+  skipQuery?: boolean;
+};
+
+export const useQuote = ({ skipQuery = false }: Props = {}) => {
+  const router = useRouter();
   const pathname = usePathname();
   const loadingRef = useRef<LoadingBarRef>(null);
-  const router = useRouter();
+  const { quoteId } = useParams<{ quoteId: string }>();
   const [createQuote, createQuoteResult] = useCreateQuoteMutation();
   const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId, {
-    skip: !quoteId,
+    skip: skipQuery || !quoteId,
   });
+
+  const address = useMemo(() => getAddressFromQuote(quote), [quote]);
+  const coverage = useMemo(() => getCoverageFromQuote(quote), [quote]);
+  const policy = useMemo(() => getPolicyFromQuote(quote), [quote]);
+  const businessInformation = useMemo(
+    () => getBusinessInfoFromQuote(quote),
+    [quote]
+  );
 
   const handleQuoteMutation = useCallback(
     async (step: Step, payload: any) => {
@@ -48,8 +66,9 @@ export const useQuote = () => {
   useEffect(() => {
     if (
       quoteQueryResult.isError ||
-      (!quoteQueryResult.isLoading && isEmpty(quote) && quoteId)
+      (!quoteQueryResult.isLoading && isEmpty(quote) && quoteId && !skipQuery)
     ) {
+      console.log('error');
       if (
         isEmpty(quote) ||
         (quoteQueryResult.error &&
@@ -86,9 +105,14 @@ export const useQuote = () => {
   return {
     quoteId,
     quote,
+    address,
+    coverage,
+    policy,
+    businessInformation,
     quoteQueryResult,
     createQuoteResult,
     handleQuoteMutation,
     loadingRef,
+    router,
   };
 };

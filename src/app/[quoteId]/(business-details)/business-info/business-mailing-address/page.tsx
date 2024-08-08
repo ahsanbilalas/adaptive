@@ -1,11 +1,10 @@
 'use client';
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFormik } from 'formik';
 import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useQuote } from '@/hooks/useQuote';
+import { useQuoteForms } from '@/hooks/useQuoteForms';
 import { IAddress } from '@/store/api/types';
 import {
   initAddressState,
@@ -28,23 +27,23 @@ import LoadingBar from 'react-top-loading-bar';
 
 const BusinessMailingPage = () => {
   const router = useRouter();
-
-  const {
-    quote,
-    loadingRef,
-    quoteQueryResult: { isLoading },
-  } = useQuote();
-
   const dispatch = useAppDispatch();
   const businessAddress = useAppSelector(selectBusinessMailingAddress);
   const businessInformation = useAppSelector(selectBusinessInformation);
 
-  const formik = useFormik({
+  const {
+    formik: { handleSubmit, isSubmitting },
+    quote,
+    loadingRef,
+    quoteQueryResult: { isLoading },
+    getFieldAttrs,
+  } = useQuoteForms({
+    config: businessAddressConfig.inputs,
     enableReinitialize: true,
     initialValues: businessAddress,
     validationSchema: businessAddressSchema,
     onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessMailingAddress(values));
+      dispatch(setBusinessMailingAddress(values as IAddress));
       setSubmitting(false);
       router.push(`business-billing-address`);
     },
@@ -62,20 +61,10 @@ const BusinessMailingPage = () => {
     }
   }, [quote, businessInformation, businessAddress, dispatch]);
 
-  const getFieldAttrs = (fieldName: keyof IAddress, extraAttrs: any = {}) => ({
-    ...extraAttrs,
-    ...businessAddressConfig.inputs[fieldName],
-    value: formik.values[fieldName],
-    error: formik.errors[fieldName],
-    touched: formik.touched[fieldName],
-    handleChange: formik.handleChange,
-    handleBlur: formik.handleBlur,
-  });
-
   return (
     <BusinessInfoFormsContainer title="Enter your business mailing address">
       <LoadingBar ref={loadingRef} />
-      <form className="flex flex-col gap-5" onSubmit={formik.handleSubmit}>
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <FormikInputField {...getFieldAttrs('street')} />
         <FormikInputField {...getFieldAttrs('street2')} />
         <FormikInputField {...getFieldAttrs('city')} />
@@ -87,7 +76,7 @@ const BusinessMailingPage = () => {
         />
         <BottomNavBar
           buttonLabel="Next: Business Revenue Range"
-          disabled={formik.isSubmitting || isLoading}
+          disabled={isSubmitting || isLoading}
         />
       </form>
     </BusinessInfoFormsContainer>

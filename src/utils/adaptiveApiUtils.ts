@@ -35,7 +35,7 @@ export const getBusinessDetailsFromQuote = (quote: IQuote | undefined) => ({
 export const getPolicyFromQuote = (quote: IQuote | undefined) => ({
   quoteEstimates: quote?.data.quoteEstimates || [],
   selectedEstimateId: quote?.data.selectedEstimateId || '',
-  amount: quote?.data.quoteEstimates[0].coverageAmount || 10000,
+  amount: quote?.data?.quoteEstimates?.[0]?.coverageAmount || 10000,
   effectiveDateUtc: quote?.effectiveDateUtc || '',
 });
 
