@@ -31,7 +31,7 @@ export const useQuoteForms = ({
     businessInformation,
     quoteQueryResult,
     createQuoteResult,
-    handleQuoteMutation,
+    handleSubmitQuote,
     loadingRef,
     router,
   } = useQuote({ skipQuery });
@@ -65,7 +65,7 @@ export const useQuoteForms = ({
     businessInformation,
     quoteQueryResult,
     createQuoteResult,
-    handleQuoteMutation,
+    handleSubmitQuote,
     loadingRef,
     formik,
     getFieldAttrs,

@@ -11,9 +11,9 @@
   "dependencies": {
     "@react-input/mask": "^1.2.5",
     "@reduxjs/toolkit": "^2.2.5",
+    "dayjs": "^1.11.12",
     "formik": "^2.4.6",
     "lodash": "^4.17.21",
-    "moment": "^2.30.1",
     "next": "14.2.4",
     "react": "^18",
     "react-dom": "^18",

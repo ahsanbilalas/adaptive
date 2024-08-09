@@ -1,5 +1,8 @@
-import moment from 'moment';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import { date, number, object, ref, string } from 'yup';
+
+dayjs.extend(utc);
 
 export const getQuoteSchema = object({
   address: string().required(''),
@@ -9,9 +12,9 @@ export const policySelectionSchema = object({
   estimateId: string().required(),
   coverageAmount: number().moreThan(0).required(),
   effectiveDate: date()
-    .min(moment().toISOString(), 'Please enter a date in the future')
+    .min(dayjs().toISOString(), 'Please enter a date in the future')
     .max(
-      moment().add(89, 'days').toISOString(),
+      dayjs().add(89, 'day').toISOString(),
       'Max date cannot be more than 90 days from today'
     ),
 });

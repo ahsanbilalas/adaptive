@@ -1,5 +1,6 @@
-import React, { ChangeEvent } from 'react';
-import { IAddress, ICoverage, IQuoteEstimate } from '@/store/api/types';
+import React from 'react';
+import dayjs from 'dayjs';
+import { IAddress, IQuoteEstimate } from '@/store/api/types';
 import { policyCoverageConfig } from '@/config/policyCoverageConfig';
 import {
   PageWrapper,
@@ -38,7 +39,7 @@ const PolicyCoverageUI = ({
           <div className="md:hidden">
             <QuoteCard
               selectedEstimate={selectedEstimate}
-              effectiveDateUtc={new Date(values.effectiveDate).toISOString()}
+              effectiveDateUtc={dayjs(values.effectiveDate).toISOString()}
             />
             <HorizontalLine className="my-16" />
           </div>
@@ -78,7 +79,7 @@ const PolicyCoverageUI = ({
           <div className="fixed right-10">
             <QuoteCard
               selectedEstimate={selectedEstimate}
-              effectiveDateUtc={new Date(values.effectiveDate).toISOString()}
+              effectiveDateUtc={dayjs(values.effectiveDate).toISOString()}
             />
           </div>
         </QuoteCardWrapper>

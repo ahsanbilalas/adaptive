@@ -1,11 +1,10 @@
 'use client';
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useFormik } from 'formik';
+import { FormikHelpers, FormikValues } from 'formik';
 import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useQuote } from '@/hooks/useQuote';
+import { useQuoteForms } from '@/hooks/useQuoteForms';
 import {
   initAddressState,
   initBusinessInfoState,
@@ -14,10 +13,6 @@ import {
   setBusinessBillingAddress,
   setBusinessInformation,
 } from '@/store/feature/business-info';
-import {
-  getAddressFromQuote,
-  getBusinessInfoFromQuote,
-} from '@/utils/adaptiveApiUtils';
 import { IAddress } from '@/store/api/types';
 import { businessAddressConfig } from '@/config/businessAddressConfig';
 import { businessAddressSchema } from '@/validations/quoteValidations';
@@ -25,43 +20,54 @@ import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoF
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import LoadingBar from 'react-top-loading-bar';
-import { useQuoteForms } from '@/hooks/useQuoteForms';
 
 const BusinessBillingPage = () => {
-  const router = useRouter();
   const dispatch = useAppDispatch();
-  const businessInformation = useAppSelector(selectBusinessInformation);
-  const businessAddress = useAppSelector(selectBusinessBillingAddress);
+  const businessInfoState = useAppSelector(selectBusinessInformation);
+  const businessAddressState = useAppSelector(selectBusinessBillingAddress);
 
   const {
+    router,
     formik: { handleSubmit, isSubmitting },
     quote,
+    address,
+    businessInformation,
     loadingRef,
     quoteQueryResult: { isLoading },
     getFieldAttrs,
   } = useQuoteForms({
     config: businessAddressConfig.inputs,
     enableReinitialize: true,
-    initialValues: businessAddress,
+    initialValues: businessAddressState,
     validationSchema: businessAddressSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessBillingAddress(values as IAddress));
-      setSubmitting(false);
-      router.push(`business-revenue`);
-    },
+    onSubmit,
   });
 
   const zipMaskRef = useMask({ mask: '_____', replacement: { _: /\d/ } });
 
   useEffect(() => {
-    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
-      const businessInfo = getBusinessInfoFromQuote(quote);
-      dispatch(setBusinessInformation(businessInfo));
-    } else if (quote && isEqual(businessAddress, initAddressState)) {
-      const address = getAddressFromQuote(quote);
+    if (quote?.insured && isEqual(businessInfoState, initBusinessInfoState)) {
+      dispatch(setBusinessInformation(businessInformation));
+    } else if (quote && isEqual(businessAddressState, initAddressState)) {
       dispatch(setBusinessBillingAddress(address));
     }
-  }, [quote, businessInformation, businessAddress, dispatch]);
+  }, [
+    quote,
+    businessInfoState,
+    businessAddressState,
+    address,
+    businessInformation,
+    dispatch,
+  ]);
+
+  function onSubmit(
+    values: FormikValues,
+    { setSubmitting }: FormikHelpers<FormikValues>
+  ) {
+    dispatch(setBusinessBillingAddress(values as IAddress));
+    setSubmitting(false);
+    router.push(`business-revenue`);
+  }
 
   return (
     <BusinessInfoFormsContainer title="Enter your business billing address">

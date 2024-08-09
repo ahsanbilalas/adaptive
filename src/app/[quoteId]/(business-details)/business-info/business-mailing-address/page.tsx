@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { isEqual } from 'lodash';
 import { useMask } from '@react-input/mask';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -14,52 +13,61 @@ import {
   setBusinessInformation,
   setBusinessMailingAddress,
 } from '@/store/feature/business-info';
-import {
-  getAddressFromQuote,
-  getBusinessInfoFromQuote,
-} from '@/utils/adaptiveApiUtils';
 import { businessAddressConfig } from '@/config/businessAddressConfig';
 import { businessAddressSchema } from '@/validations/quoteValidations';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
 import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import LoadingBar from 'react-top-loading-bar';
+import { FormikHelpers, FormikValues } from 'formik';
 
 const BusinessMailingPage = () => {
-  const router = useRouter();
   const dispatch = useAppDispatch();
-  const businessAddress = useAppSelector(selectBusinessMailingAddress);
-  const businessInformation = useAppSelector(selectBusinessInformation);
+  const businessAddressState = useAppSelector(selectBusinessMailingAddress);
+  const businessInfoState = useAppSelector(selectBusinessInformation);
 
   const {
+    router,
     formik: { handleSubmit, isSubmitting },
     quote,
+    address,
+    businessInformation,
     loadingRef,
     quoteQueryResult: { isLoading },
     getFieldAttrs,
   } = useQuoteForms({
     config: businessAddressConfig.inputs,
     enableReinitialize: true,
-    initialValues: businessAddress,
+    initialValues: businessAddressState,
     validationSchema: businessAddressSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessMailingAddress(values as IAddress));
-      setSubmitting(false);
-      router.push(`business-billing-address`);
-    },
+    onSubmit,
   });
 
   const zipMaskRef = useMask({ mask: '_____', replacement: { _: /\d/ } });
 
   useEffect(() => {
-    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
-      const businessInfo = getBusinessInfoFromQuote(quote);
-      dispatch(setBusinessInformation(businessInfo));
-    } else if (quote && isEqual(businessAddress, initAddressState)) {
-      const address = getAddressFromQuote(quote);
+    if (quote?.insured && isEqual(businessInfoState, initBusinessInfoState)) {
+      dispatch(setBusinessInformation(businessInformation));
+    } else if (quote && isEqual(businessAddressState, initAddressState)) {
       dispatch(setBusinessMailingAddress(address));
     }
-  }, [quote, businessInformation, businessAddress, dispatch]);
+  }, [
+    quote,
+    businessInfoState,
+    businessAddressState,
+    address,
+    businessInformation,
+    dispatch,
+  ]);
+
+  function onSubmit(
+    values: FormikValues,
+    { setSubmitting }: FormikHelpers<FormikValues>
+  ) {
+    dispatch(setBusinessMailingAddress(values as IAddress));
+    setSubmitting(false);
+    router.push(`business-billing-address`);
+  }
 
   return (
     <BusinessInfoFormsContainer title="Enter your business mailing address">

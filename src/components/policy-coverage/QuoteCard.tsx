@@ -1,9 +1,8 @@
 'use client';
 import React from 'react';
-import moment from 'moment';
-import { find, map, round } from 'lodash';
-import { useAppSelector } from '@/store/hooks';
-import { selectPolicyCoverage } from '@/store/feature/policy-coverage';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import { map } from 'lodash';
 import { currencyFormat } from '@/utils/quoteUtils';
 import {
   HorizontalLine,
@@ -13,6 +12,8 @@ import {
 import Button from '@/elements/buttons/Button';
 import BlueTickIcon from '@/elements/icons/BlueTickIcon';
 import { IQuoteEstimate } from '@/store/api/types';
+
+dayjs.extend(utc);
 
 type Props = {
   selectedEstimate: IQuoteEstimate;
@@ -27,15 +28,12 @@ const QuoteCard = (props: Props) => {
     `Coverage limit of ${currencyFormat(
       props.selectedEstimate?.coverageAmount || 10000
     )}`,
-    `Coverage starting as of ${moment
+    `Coverage starting as of ${dayjs
       .utc(props.effectiveDateUtc)
       .format('D MMM, YYYY')}`,
     'Easy payment once your power goes out',
   ];
-
-  const premium = props.selectedEstimate?.premiumAmount
-    ? props.selectedEstimate.premiumAmount
-    : 0;
+  const premium = props.selectedEstimate?.premiumAmount ?? 0;
 
   return (
     <QuoteWrapper>

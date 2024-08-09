@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { notFound, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { map } from 'lodash';
+import { notFound } from 'next/navigation';
+import { get, map } from 'lodash';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
+import { FormikHelpers, FormikValues } from 'formik';
 import { useAppDispatch } from '@/store/hooks';
 import { useAutocompleteQuery } from '@/store/api/baseApi';
 import { IAddress, Step } from '@/store/api/types';
@@ -30,13 +30,13 @@ import Button from '@/elements/buttons/Button';
 import FormikInputField from '@/components/common/FormikInputField';
 
 export default function Home() {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const [address, setAddress] = useState<IAddress>(initAddressState);
 
   const {
+    router,
     formik,
-    handleQuoteMutation,
+    handleSubmitQuote,
     loadingRef,
     createQuoteResult,
     getFieldAttrs,
@@ -44,19 +44,7 @@ export default function Home() {
     skipQuery: true,
     initialValues: getQuoteConfig.initialValues,
     validationSchema: getQuoteSchema,
-    onSubmit: async (values, { setSubmitting, setFieldError }) => {
-      try {
-        const res = await handleQuoteMutation(Step.address, address);
-        dispatch(setBusinessInformation(initBusinessInfoState));
-        router.push(`${res.id}/policy-selection`);
-      } catch (error: any) {
-        setSubmitting(false);
-        if (error?.status === 400) {
-          toast.error('Please provide a valid address');
-          setFieldError('address', 'Please provide a valid address');
-        } else toast.error('Something went wrong. Try again.');
-      }
-    },
+    onSubmit,
   });
 
   const { data, isFetching, isError, error } = useAutocompleteQuery(
@@ -91,10 +79,27 @@ export default function Home() {
   useEffect(() => {
     // SmartyStreets api error handling
     if (formik.values.address !== '' && isError) {
-      if ('status' in error && error.status === 404) notFound();
+      if (get(error, 'status') === 404) notFound();
       else toast.error('Something went wrong.');
     }
   }, [formik.values.address, isError, error]);
+
+  async function onSubmit(
+    values: FormikValues,
+    { setSubmitting, setFieldError }: FormikHelpers<FormikValues>
+  ) {
+    try {
+      const res = await handleSubmitQuote(Step.address, address);
+      dispatch(setBusinessInformation(initBusinessInfoState));
+      router.push(`${res.id}/policy-selection`);
+    } catch (error: any) {
+      setSubmitting(false);
+      if (error?.status === 400) {
+        toast.error('Please provide a valid address');
+        setFieldError('address', 'Please provide a valid address');
+      } else toast.error('Something went wrong. Try again.');
+    }
+  }
 
   return (
     <PageWrapper>

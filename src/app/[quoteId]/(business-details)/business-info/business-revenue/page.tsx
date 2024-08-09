@@ -1,6 +1,5 @@
 'use client';
-import React, { useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
 import { FormikHelpers, FormikValues } from 'formik';
 import { isEqual } from 'lodash';
 import toast from 'react-hot-toast';
@@ -24,41 +23,36 @@ import FormikInputField from '@/components/common/FormikInputField';
 import BottomNavBar from '@/components/common/BottomNavBar';
 
 const BusinessRevenuePage = () => {
-  const router = useRouter();
   const dispatch = useAppDispatch();
-  const businessRevenue = useAppSelector(selectBusinessRevenue);
-  const businessInformation = useAppSelector(
+  const businessRevenueState = useAppSelector(selectBusinessRevenue);
+  const businessInfoState = useAppSelector(
     selectBusinessInformation
   ) as IBusinessInformation;
 
   const {
+    router,
     formik: { handleSubmit, isSubmitting },
     quoteId,
     quote,
+    businessInformation,
     quoteQueryResult,
     createQuoteResult,
     loadingRef,
-    handleQuoteMutation,
+    handleSubmitQuote,
     getFieldAttrs,
   } = useQuoteForms({
     config: businessRevenueConfig.inputs,
     enableReinitialize: true,
-    initialValues: businessRevenue,
+    initialValues: businessRevenueState,
     validationSchema: businessRevenueSchema,
     onSubmit,
   });
 
-  const businessInfoFromQuote = useMemo(
-    () => getBusinessInfoFromQuote(quote),
-    [quote]
-  );
-
   useEffect(() => {
-    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
-      const businessInfo = getBusinessInfoFromQuote(quote);
-      dispatch(setBusinessInformation(businessInfo));
+    if (quote?.insured && isEqual(businessInfoState, initBusinessInfoState)) {
+      dispatch(setBusinessInformation(businessInformation));
     }
-  }, [quote, businessInformation, businessInfoFromQuote, dispatch]);
+  }, [quote, businessInfoState, businessInformation, dispatch]);
 
   async function onSubmit(
     values: FormikValues,
@@ -66,9 +60,9 @@ const BusinessRevenuePage = () => {
   ) {
     try {
       dispatch(setBusinessRevenue(values as IBusinessRevenue));
-      const payload = { ...businessInformation, ...values };
-      if (!isEqual(businessInfoFromQuote, payload))
-        await handleQuoteMutation(Step.businessInformation, payload);
+      const payload = { ...businessInfoState, ...values };
+      if (!isEqual(businessInformation, payload))
+        await handleSubmitQuote(Step.businessInformation, payload);
       router.push(`/${quoteId}/review-quote`);
     } catch (error: any) {
       if (error?.status === 400 && Array.isArray(error?.data?.message)) {

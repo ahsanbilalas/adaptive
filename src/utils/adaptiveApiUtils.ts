@@ -1,4 +1,5 @@
-import moment from 'moment';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import { find } from 'lodash';
 import {
   IAddress,
@@ -7,6 +8,8 @@ import {
   IQuote,
 } from '@/store/api/types';
 import { initAddressState } from '@/store/feature/business-info';
+
+dayjs.extend(utc);
 
 export const getBusinessInfoFromQuote = (
   quote: IQuote | undefined
@@ -49,10 +52,8 @@ export const getCoverageFromQuote = (quote: IQuote | undefined): ICoverage => {
   return {
     coverageAmount: selectedEstimate?.coverageAmount || 10000,
     estimateId: selectedEstimate?.productId || '',
-    effectiveDate: moment
-      .utc(
-        quote?.effectiveDateUtc ? quote?.effectiveDateUtc : date.toISOString()
-      )
+    effectiveDate: dayjs
+      .utc(quote?.effectiveDateUtc ?? date.toISOString())
       .format('MM/DD/YY'),
   };
 };

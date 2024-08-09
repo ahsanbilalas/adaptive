@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { notFound, useParams, usePathname, useRouter } from 'next/navigation';
 import { LoadingBarRef } from 'react-top-loading-bar';
+import toast from 'react-hot-toast';
+import { get, isEmpty } from 'lodash';
 import {
   useCreateQuoteMutation,
   useGetQuoteQuery,
 } from '@/store/api/adaptiveApiSlice';
 import { Step } from '@/store/api/types';
-import { isEmpty } from 'lodash';
 import {
   getAddressFromQuote,
   getBusinessInfoFromQuote,
@@ -23,24 +24,26 @@ export const useQuote = ({ skipQuery = false }: Props = {}) => {
   const pathname = usePathname();
   const loadingRef = useRef<LoadingBarRef>(null);
   const { quoteId } = useParams<{ quoteId: string }>();
-  const [createQuote, createQuoteResult] = useCreateQuoteMutation();
+  const [handleQuoteMutation, createQuoteResult] = useCreateQuoteMutation();
   const { data: quote, ...quoteQueryResult } = useGetQuoteQuery(quoteId, {
     skip: skipQuery || !quoteId,
   });
 
-  const address = useMemo(() => getAddressFromQuote(quote), [quote]);
-  const coverage = useMemo(() => getCoverageFromQuote(quote), [quote]);
-  const policy = useMemo(() => getPolicyFromQuote(quote), [quote]);
-  const businessInformation = useMemo(
-    () => getBusinessInfoFromQuote(quote),
+  const { address, coverage, policy, businessInformation } = useMemo(
+    () => ({
+      address: getAddressFromQuote(quote),
+      coverage: getCoverageFromQuote(quote),
+      policy: getPolicyFromQuote(quote),
+      businessInformation: getBusinessInfoFromQuote(quote),
+    }),
     [quote]
   );
 
-  const handleQuoteMutation = useCallback(
+  const handleSubmitQuote = useCallback(
     async (step: Step, payload: any) => {
       try {
         loadingRef.current?.continuousStart();
-        const res = await createQuote({
+        const res = await handleQuoteMutation({
           quoteId,
           step,
           product: 'Outage',
@@ -53,7 +56,7 @@ export const useQuote = ({ skipQuery = false }: Props = {}) => {
         throw error;
       }
     },
-    [createQuote, quoteId]
+    [handleQuoteMutation, quoteId]
   );
 
   useEffect(() => {
@@ -68,15 +71,9 @@ export const useQuote = ({ skipQuery = false }: Props = {}) => {
       quoteQueryResult.isError ||
       (!quoteQueryResult.isLoading && isEmpty(quote) && quoteId && !skipQuery)
     ) {
-      console.log('error');
-      if (
-        isEmpty(quote) ||
-        (quoteQueryResult.error &&
-          'status' in quoteQueryResult.error &&
-          quoteQueryResult.error.status === 404)
-      )
+      if (isEmpty(quote) || get(quoteQueryResult.error, 'status') === 404)
         notFound();
-      else throw quoteQueryResult.error;
+      else toast.error('Something went wrong.');
     }
 
     if (!quoteQueryResult.isFetching && quote) {
@@ -112,7 +109,7 @@ export const useQuote = ({ skipQuery = false }: Props = {}) => {
     businessInformation,
     quoteQueryResult,
     createQuoteResult,
-    handleQuoteMutation,
+    handleSubmitQuote,
     loadingRef,
     router,
   };

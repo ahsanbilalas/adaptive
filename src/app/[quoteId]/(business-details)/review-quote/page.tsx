@@ -5,10 +5,6 @@ import LoadingBar from 'react-top-loading-bar';
 import { useQuote } from '@/hooks/useQuote';
 import { Step } from '@/store/api/types';
 import { currencyFormat, getCompleteAddress } from '@/utils/quoteUtils';
-import {
-  getAddressFromQuote,
-  getBusinessInfoFromQuote,
-} from '@/utils/adaptiveApiUtils';
 import { Title } from '@/components/business-info/style';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import DisabledInputField from '@/components/common/DisabledInputField';
@@ -21,13 +17,13 @@ const ReviewPage = () => {
     quoteQueryResult,
     createQuoteResult,
     loadingRef,
-    handleQuoteMutation,
+    handleSubmitQuote,
   } = useQuote();
 
   useEffect(() => {
     const completeQuoteCheckout = async () => {
       try {
-        await handleQuoteMutation(Step.checkout, {});
+        await handleSubmitQuote(Step.checkout, {});
       } catch (error: any) {
         if (error?.status === 400 && Array.isArray(error?.data?.message)) {
           error?.data?.message.map((err: string) => toast.error(err));
@@ -36,7 +32,7 @@ const ReviewPage = () => {
     };
 
     completeQuoteCheckout();
-  }, [handleQuoteMutation]);
+  }, [handleSubmitQuote]);
 
   return (
     <div className="flex flex-col gap-5">

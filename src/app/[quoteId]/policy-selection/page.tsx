@@ -1,14 +1,14 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import moment from 'moment';
 import { FormikHelpers, FormikValues } from 'formik';
-import { find } from 'lodash';
+import { find, isEqual } from 'lodash';
 import toast from 'react-hot-toast';
 import LoadingBar from 'react-top-loading-bar';
 import { policySelectionSchema } from '@/validations/quoteValidations';
 import { useQuote } from '@/hooks/useQuote';
 import { useQuoteForms } from '@/hooks/useQuoteForms';
 import { ICoverage, IQuoteEstimate, Step } from '@/store/api/types';
+import { convertCoverageDate, convertStandardDate } from '@/utils/quoteUtils';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import InstructionModal from '@/components/policy-coverage/InstructionModal';
 import PolicyCoverageUI from '@/components/policy-coverage/PolicyCoverageUI';
@@ -22,23 +22,21 @@ const PolicySelectionPage = () => {
     coverage,
     quoteQueryResult,
     loadingRef,
-    handleQuoteMutation,
+    handleSubmitQuote,
     router,
   } = useQuote();
 
-  const initialValues: ICoverage = useMemo(() => {
+  const initialCoverage: ICoverage = useMemo(() => {
     return {
       ...coverage,
-      effectiveDate: moment(coverage.effectiveDate, 'MM/DD/YY').format(
-        'YYYY-MM-DD'
-      ),
+      effectiveDate: convertCoverageDate(coverage.effectiveDate),
     };
   }, [coverage]);
 
   const { formik, getFieldAttrs } = useQuoteForms({
     skipQuery: true,
     enableReinitialize: true,
-    initialValues,
+    initialValues: initialCoverage,
     validationSchema: policySelectionSchema,
     onSubmit,
   });
@@ -48,15 +46,15 @@ const PolicySelectionPage = () => {
       find(quote?.data.quoteEstimates, {
         productId: formik.values.estimateId,
       }),
-    [quote?.data.quoteEstimates, formik.values.estimateId]
+    [quote?.data?.quoteEstimates, formik.values.estimateId]
   );
 
   const updatePolicy = useCallback(
     async (values: FormikValues) => {
       try {
-        await handleQuoteMutation(Step.coverage, {
+        await handleSubmitQuote(Step.coverage, {
           ...values,
-          effectiveDate: moment(values.effectiveDate).format('MM/DD/YYYY'),
+          effectiveDate: convertStandardDate(values.effectiveDate),
         });
       } catch (error: any) {
         if (error?.status === 400 && Array.isArray(error?.data?.message)) {
@@ -66,32 +64,32 @@ const PolicySelectionPage = () => {
         }
       }
     },
-    [handleQuoteMutation]
+    [handleSubmitQuote]
   );
 
   useEffect(() => {
-    if (quote && !quote.data.quoteEstimates) {
+    if (!quote?.data?.quoteEstimates) {
       updatePolicy(coverage);
     }
-  }, [quote, coverage, updatePolicy]);
+  }, [quote?.data?.quoteEstimates, coverage, updatePolicy]);
 
   useEffect(() => {
     if (
-      formik.initialValues === initialValues &&
-      formik.values.coverageAmount !== initialValues.coverageAmount
+      isEqual(formik.initialValues, initialCoverage) &&
+      !isEqual(formik.values.coverageAmount, initialCoverage.coverageAmount)
     ) {
       updatePolicy(formik.values);
     }
-  }, [formik.initialValues, formik.values, initialValues, updatePolicy]);
+  }, [formik.initialValues, formik.values, initialCoverage, updatePolicy]);
 
   async function onSubmit(
     values: FormikValues,
     { setSubmitting }: FormikHelpers<FormikValues>
   ) {
     try {
-      await handleQuoteMutation(Step.coverage, {
+      await handleSubmitQuote(Step.coverage, {
         ...values,
-        effectiveDate: moment(values.effectiveDate).format('MM/DD/YYYY'),
+        effectiveDate: convertStandardDate(values.effectiveDate),
       });
       router.push(`business-info/business-entity-details`);
     } catch (error: any) {

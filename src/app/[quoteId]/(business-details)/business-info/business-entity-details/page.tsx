@@ -20,16 +20,18 @@ import { businessDetailsConfig } from '@/config/businessDetailsConfig';
 import BusinessInfoFormsContainer from '@/components/business-info/BusinessInfoFormsContainer';
 import BottomNavBar from '@/components/common/BottomNavBar';
 import FormikInputField from '@/components/common/FormikInputField';
+import { FormikHelpers, FormikValues } from 'formik';
 
 const BusinessEntityPage = () => {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const businessDetails = useAppSelector(selectBusinessDetails);
-  const businessInformation = useAppSelector(selectBusinessInformation);
+  const businessInfoState = useAppSelector(selectBusinessInformation);
 
   const {
+    router,
     formik: { handleSubmit, isSubmitting },
     quote,
+    businessInformation,
     quoteQueryResult: { isFetching },
     loadingRef,
     getFieldAttrs,
@@ -38,11 +40,7 @@ const BusinessEntityPage = () => {
     enableReinitialize: true,
     initialValues: businessDetails,
     validationSchema: businessDetailsSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      dispatch(setBusinessDetails(values as IBusinessDetails));
-      setSubmitting(false);
-      router.push(`business-mailing-address`);
-    },
+    onSubmit,
   });
 
   const phoneMaskRef = useMask({
@@ -51,11 +49,19 @@ const BusinessEntityPage = () => {
   });
 
   useEffect(() => {
-    if (quote?.insured && isEqual(businessInformation, initBusinessInfoState)) {
-      const businessInfo = getBusinessInfoFromQuote(quote);
-      dispatch(setBusinessInformation(businessInfo));
+    if (quote?.insured && isEqual(businessInfoState, initBusinessInfoState)) {
+      dispatch(setBusinessInformation(businessInformation));
     }
-  }, [quote, businessInformation, dispatch]);
+  }, [quote, businessInfoState, businessInformation, dispatch]);
+
+  function onSubmit(
+    values: FormikValues,
+    { setSubmitting }: FormikHelpers<FormikValues>
+  ) {
+    dispatch(setBusinessDetails(values as IBusinessDetails));
+    setSubmitting(false);
+    router.push(`business-mailing-address`);
+  }
 
   return (
     <BusinessInfoFormsContainer title="Enter your business details">
