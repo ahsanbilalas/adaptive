@@ -101,13 +101,6 @@ export default function Home() {
       <LoadingBar ref={loadingRef} />
       <Wrapper>
         <LogoContainer>
-          {/* <Image
-            className="size-20 md:size-24"
-            src={'/logo.svg'}
-            alt=""
-            width={50}
-            height={50}
-          /> */}
           <p className="text-5xl md:text-5xl">Get a quote in seconds</p>
         </LogoContainer>
 

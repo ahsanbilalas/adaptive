@@ -100,6 +100,7 @@ export const useQuote = ({ skipQuery = false }: Props = {}) => {
     quoteQueryResult.error,
     router,
     pathname,
+    skipQuery,
   ]);
 
   return {

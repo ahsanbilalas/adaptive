@@ -20,16 +20,11 @@ type Props = {
 
 const BottomNavBar = (props: Props) => {
   const { router, policy } = useQuote();
-  let productId = props.selectedId
-    ? props.selectedId
-    : policy.selectedEstimateId;
+  let productId = props.selectedId ?? policy.selectedEstimateId;
   const selectedEstimate = find(policy.quoteEstimates, {
     productId: productId,
   });
-  const premium = selectedEstimate?.premiumAmount
-    ? selectedEstimate.premiumAmount
-    : 0;
-
+  const premium = selectedEstimate?.premiumAmount ?? 0;
   return (
     <BottomNavbarContainer>
       <BackIconContainer onClick={() => router.back()}>
